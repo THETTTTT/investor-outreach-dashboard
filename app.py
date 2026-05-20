@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import plotly.express as px
 import requests
@@ -27,6 +28,7 @@ st.set_page_config(
 # =========================
 def load_css(has_file=False):
     sidebar_css = ""
+    sidebar_width = "270px"
 
     st.markdown(f"""
     <style>
@@ -38,6 +40,14 @@ def load_css(has_file=False):
 
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
+
+    /* Hide Streamlit deploy button only */
+    .stDeployButton {{
+        display: none !important;
+    }}
+
+    /* Keep Streamlit toolbar available so the native sidebar button can work.
+       Deploy button is still hidden separately above. */
     
     /* Do not hide Streamlit header, because the sidebar reopen arrow lives there */
     header {{
@@ -48,13 +58,8 @@ def load_css(has_file=False):
         background: transparent !important;
     }}
 
-    section[data-testid="stSidebar"] {{
-        display: block !important;
-        visibility: visible !important;
-        transform: translateX(0px) !important;
-        margin-left: 0 !important;
-    }}
-    
+    /* Let Streamlit handle sidebar open/close natively.
+       Do not force display/position/transform here. */
 
     .block-container {{
         padding-top: 2rem;
@@ -68,7 +73,6 @@ def load_css(has_file=False):
     [data-testid="stSidebar"] {{
         background: rgba(8, 17, 31, 0.98);
         border-right: 1px solid rgba(148, 163, 184, 0.18);
-        width: 270px !important;
     }}
 
     [data-testid="stSidebar"] * {{
@@ -95,7 +99,7 @@ def load_css(has_file=False):
     }}
 
     .sidebar-brand {{
-        padding: 8px 0 24px 0;
+        padding: 0 0 14px 0;
     }}
 
     .sidebar-brand h2 {{
@@ -120,11 +124,11 @@ def load_css(has_file=False):
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        margin-bottom: 18px;
+        margin-bottom: 10px;
     }}
 
     .sidebar-summary-item {{
-        margin-bottom: 18px;
+        margin-bottom: 10px;
         font-size: 13px;
         color: #94a3b8;
     }}
@@ -412,8 +416,503 @@ def load_css(has_file=False):
         border-top: 1px solid rgba(148, 163, 184, 0.18);
         margin: 24px 0;
     }}
+
+
+    /* =========================
+       INTERACTIVE / MOTION EFFECTS
+       Safe CSS-only upgrades
+    ========================= */
+    html {{
+        scroll-behavior: smooth;
+    }}
+
+    .stApp::before {{
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        background:
+            radial-gradient(circle at 18% 20%, rgba(59, 130, 246, 0.16), transparent 28%),
+            radial-gradient(circle at 82% 10%, rgba(168, 85, 247, 0.12), transparent 26%),
+            radial-gradient(circle at 60% 88%, rgba(20, 184, 166, 0.10), transparent 30%);
+        animation: ambientGlow 13s ease-in-out infinite alternate;
+    }}
+
+    .stApp > div {{
+        position: relative;
+        z-index: 1;
+    }}
+
+    @keyframes ambientGlow {{
+        0% {{ opacity: 0.45; transform: scale(1); }}
+        100% {{ opacity: 0.95; transform: scale(1.06); }}
+    }}
+
+    .main-title {{
+        background: linear-gradient(90deg, #ffffff, #93c5fd, #c4b5fd, #ffffff);
+        background-size: 220% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: titleShimmer 7s linear infinite;
+    }}
+
+    @keyframes titleShimmer {{
+        0% {{ background-position: 0% center; }}
+        100% {{ background-position: 220% center; }}
+    }}
+
+    .kpi-card,
+    .glass-card,
+    div[data-testid="stVerticalBlockBorderWrapper"] {{
+        transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+    }}
+
+    .kpi-card:hover,
+    .glass-card:hover,
+    div[data-testid="stVerticalBlockBorderWrapper"]:hover {{
+        transform: translateY(-5px);
+        border-color: rgba(96, 165, 250, 0.50) !important;
+        box-shadow: 0 22px 48px rgba(0, 0, 0, 0.34), 0 0 26px rgba(37, 99, 235, 0.14) !important;
+    }}
+
+    .kpi-icon {{
+        animation: softPulse 3.2s ease-in-out infinite;
+    }}
+
+    @keyframes softPulse {{
+        0%, 100% {{ transform: scale(1); filter: brightness(1); }}
+        50% {{ transform: scale(1.05); filter: brightness(1.18); }}
+    }}
+
+    .stButton > button {{
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }}
+
+    .stButton > button:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(37, 99, 235, 0.32);
+    }}
+
+    .stButton > button::before {{
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -80%;
+        width: 55%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+        transform: skewX(-20deg);
+        transition: left 0.55s ease;
+    }}
+
+    .stButton > button:hover::before {{
+        left: 125%;
+    }}
+
+    section[data-testid="stSidebar"] {{
+        box-shadow: 18px 0 55px rgba(0, 0, 0, 0.22);
+    }}
+
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {{
+        transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    }}
+
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {{
+        transform: translateX(5px);
+        box-shadow: inset 3px 0 0 rgba(96, 165, 250, 0.85);
+    }}
+
+    [data-testid="stDataFrame"],
+    table {{
+        transition: box-shadow 0.22s ease, border-color 0.22s ease;
+    }}
+
+    [data-testid="stDataFrame"]:hover {{
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+        border-color: rgba(96, 165, 250, 0.42);
+    }}
+
+    ::-webkit-scrollbar {{
+        width: 10px;
+        height: 10px;
+    }}
+
+    ::-webkit-scrollbar-track {{
+        background: rgba(15, 23, 42, 0.85);
+    }}
+
+    ::-webkit-scrollbar-thumb {{
+        background: linear-gradient(180deg, #2563eb, #7c3aed);
+        border-radius: 999px;
+        border: 2px solid rgba(15, 23, 42, 0.85);
+    }}
+
+    ::-webkit-scrollbar-thumb:hover {{
+        background: linear-gradient(180deg, #60a5fa, #a78bfa);
+    }}
+
+    .block-container > div {{
+        animation: pageFadeUp 0.45s ease both;
+    }}
+
+    @keyframes pageFadeUp {{
+        from {{ opacity: 0; transform: translateY(10px); }}
+        to {{ opacity: 1; transform: translateY(0); }}
+    }}
+
+
+    /* =========================
+       REAL VIBE / NEON INTERACTION LAYER
+       Visible mouse trail + neon UI motion
+    ========================= */
+
+    .stApp {{
+        overflow-x: hidden;
+    }}
+
+    .stApp::after {{
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.25;
+        background-image:
+            linear-gradient(rgba(56, 189, 248, 0.16) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(168, 85, 247, 0.14) 1px, transparent 1px);
+        background-size: 52px 52px;
+        mask-image: radial-gradient(circle at center, black 0%, transparent 72%);
+        animation: neonGridMove 18s linear infinite;
+    }}
+
+    @keyframes neonGridMove {{
+        0% {{ background-position: 0 0, 0 0; }}
+        100% {{ background-position: 104px 104px, 104px 104px; }}
+    }}
+
+    .main-title {{
+        text-shadow:
+            0 0 12px rgba(96, 165, 250, 0.38),
+            0 0 28px rgba(168, 85, 247, 0.22);
+        animation: titleShimmer 7s linear infinite, titleFloat 4s ease-in-out infinite;
+    }}
+
+    @keyframes titleFloat {{
+        0%, 100% {{ transform: translateY(0); }}
+        50% {{ transform: translateY(-3px); }}
+    }}
+
+    .kpi-card,
+    .glass-card,
+    div[data-testid="stVerticalBlockBorderWrapper"] {{
+        position: relative;
+        isolation: isolate;
+    }}
+
+    .kpi-card::before,
+    .glass-card::before,
+    div[data-testid="stVerticalBlockBorderWrapper"]::before {{
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        padding: 1px;
+        background: linear-gradient(120deg, transparent, rgba(56,189,248,0.75), rgba(168,85,247,0.75), transparent);
+        background-size: 260% 260%;
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0;
+        pointer-events: none;
+        animation: borderRun 4.5s linear infinite;
+        z-index: -1;
+    }}
+
+    .kpi-card:hover::before,
+    .glass-card:hover::before,
+    div[data-testid="stVerticalBlockBorderWrapper"]:hover::before {{
+        opacity: 1;
+    }}
+
+    @keyframes borderRun {{
+        0% {{ background-position: 0% 50%; }}
+        100% {{ background-position: 260% 50%; }}
+    }}
+
+    .kpi-card:hover {{
+        transform: perspective(900px) rotateX(3deg) rotateY(-4deg) translateY(-8px) scale(1.015);
+    }}
+
+    .kpi-card:hover .kpi-icon {{
+        animation: iconBounce 0.7s ease both, softPulse 2.4s ease-in-out infinite;
+        box-shadow:
+            inset 0 0 18px rgba(255,255,255,0.12),
+            0 0 22px rgba(56,189,248,0.34),
+            0 0 45px rgba(168,85,247,0.24);
+    }}
+
+    @keyframes iconBounce {{
+        0% {{ transform: translateY(0) scale(1); }}
+        45% {{ transform: translateY(-8px) scale(1.08); }}
+        100% {{ transform: translateY(0) scale(1.03); }}
+    }}
+
+    .stButton > button {{
+        animation: buttonBreath 3s ease-in-out infinite;
+    }}
+
+    @keyframes buttonBreath {{
+        0%, 100% {{ box-shadow: 0 0 0 rgba(37, 99, 235, 0); }}
+        50% {{ box-shadow: 0 0 24px rgba(37, 99, 235, 0.34); }}
+    }}
+
+    .neon-cursor-glow {{
+        position: fixed;
+        width: 360px;
+        height: 360px;
+        border-radius: 999px;
+        pointer-events: none;
+        z-index: 999999;
+        left: 0;
+        top: 0;
+        transform: translate(-50%, -50%);
+        background:
+            radial-gradient(circle, rgba(56, 189, 248, 0.24) 0%, rgba(168, 85, 247, 0.13) 35%, transparent 68%);
+        mix-blend-mode: screen;
+        filter: blur(10px);
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }}
+
+    .neon-trail-dot {{
+        position: fixed;
+        width: 11px;
+        height: 11px;
+        border-radius: 999px;
+        pointer-events: none;
+        z-index: 999998;
+        transform: translate(-50%, -50%);
+        background: #38bdf8;
+        box-shadow:
+            0 0 10px #38bdf8,
+            0 0 22px rgba(168,85,247,0.9),
+            0 0 38px rgba(34,211,238,0.45);
+        animation: trailFade 0.75s ease-out forwards;
+    }}
+
+    @keyframes trailFade {{
+        0% {{ opacity: 0.95; transform: translate(-50%, -50%) scale(1); }}
+        100% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.15); }}
+    }}
+
+    .neon-click-ring {{
+        position: fixed;
+        width: 22px;
+        height: 22px;
+        border: 2px solid rgba(56,189,248,0.9);
+        border-radius: 999px;
+        pointer-events: none;
+        z-index: 1000000;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 22px rgba(168,85,247,0.9);
+        animation: clickRing 0.72s ease-out forwards;
+    }}
+
+    @keyframes clickRing {{
+        0% {{ opacity: 1; width: 16px; height: 16px; }}
+        100% {{ opacity: 0; width: 110px; height: 110px; }}
+    }}
+
+    .neon-comet {{
+        position: fixed;
+        width: 160px;
+        height: 2px;
+        pointer-events: none;
+        z-index: 999997;
+        background: linear-gradient(90deg, transparent, rgba(56,189,248,0.95), rgba(168,85,247,0.9), transparent);
+        box-shadow: 0 0 18px rgba(56,189,248,0.8);
+        transform-origin: center;
+        animation: cometSwipe 0.6s ease-out forwards;
+    }}
+
+    @keyframes cometSwipe {{
+        0% {{ opacity: 0.95; transform: translate(-50%, -50%) rotate(var(--angle)) scaleX(0.25); }}
+        100% {{ opacity: 0; transform: translate(-50%, -50%) rotate(var(--angle)) scaleX(1.45); }}
+    }}
+
+    .status-ok {{
+        box-shadow: 0 0 22px rgba(34, 197, 94, 0.12);
+        animation: greenPulse 2.8s ease-in-out infinite;
+    }}
+
+    @keyframes greenPulse {{
+        0%, 100% {{ border-color: rgba(34,197,94,0.22); }}
+        50% {{ border-color: rgba(34,197,94,0.58); }}
+    }}
+
+    /* =========================
+       SIDEBAR — native Streamlit collapse, styled only.
+       Important: no fixed positioning, no forced display, no forced width on collapse.
+       This lets the dashboard fill the freed space when collapsed.
+    ========================= */
+    [data-testid="stSidebar"] {{
+        background: rgba(8, 17, 31, 0.98) !important;
+        border-right: 1px solid rgba(148, 163, 184, 0.18) !important;
+        box-shadow: 18px 0 55px rgba(0, 0, 0, 0.22) !important;
+    }}
+
+    /* Width only when sidebar is expanded. When collapsed, do NOT reserve space. */
+    [data-testid="stSidebar"][aria-expanded="true"] {{
+        min-width: {sidebar_width} !important;
+        max-width: {sidebar_width} !important;
+    }}
+
+    [data-testid="stSidebar"][aria-expanded="false"] {{
+        min-width: 0 !important;
+        max-width: 0 !important;
+        width: 0 !important;
+        border-right: 0 !important;
+        box-shadow: none !important;
+        overflow: hidden !important;
+    }}
+
+    [data-testid="stSidebar"][aria-expanded="false"] > div:first-child {{
+        display: none !important;
+    }}
+
+    /* Main dashboard stretches naturally after native sidebar collapse */
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    .main {{
+        width: 100% !important;
+    }}
+
+    [data-testid="stSidebar"] > div:first-child {{
+        background: rgba(8, 17, 31, 0.98) !important;
+        padding-top: 0.5rem !important;
+        overflow-y: auto !important;
+    }}
+
+    [data-testid="stSidebar"] hr {{
+        margin: 14px 0 !important;
+    }}
+
+    /* Keep the native sidebar open/close control visible and clickable */
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"],
+    button[aria-label*="sidebar"],
+    button[title*="sidebar"] {{
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }}
+
+    .block-container {{
+        max-width: none !important;
+    }}
+
+
     </style>
     """, unsafe_allow_html=True)
+
+
+def render_neon_mouse_effects():
+    components.html(
+        """
+        <script>
+        (function () {
+            const doc = window.parent.document;
+            if (doc.getElementById("neon-cursor-glow")) return;
+
+            const glow = doc.createElement("div");
+            glow.id = "neon-cursor-glow";
+            glow.className = "neon-cursor-glow";
+            doc.body.appendChild(glow);
+
+            let lastX = 0;
+            let lastY = 0;
+            let lastTrail = 0;
+            let lastComet = 0;
+
+            function makeTrail(x, y) {
+                const dot = doc.createElement("div");
+                dot.className = "neon-trail-dot";
+                dot.style.left = x + "px";
+                dot.style.top = y + "px";
+                doc.body.appendChild(dot);
+                setTimeout(() => dot.remove(), 800);
+            }
+
+            function makeComet(x, y, angle) {
+                const comet = doc.createElement("div");
+                comet.className = "neon-comet";
+                comet.style.left = x + "px";
+                comet.style.top = y + "px";
+                comet.style.setProperty("--angle", angle + "rad");
+                doc.body.appendChild(comet);
+                setTimeout(() => comet.remove(), 650);
+            }
+
+            doc.addEventListener("mousemove", function (e) {
+                const x = e.clientX;
+                const y = e.clientY;
+                const now = Date.now();
+
+                glow.style.opacity = "1";
+                glow.style.left = x + "px";
+                glow.style.top = y + "px";
+
+                const dx = x - lastX;
+                const dy = y - lastY;
+                const speed = Math.sqrt(dx * dx + dy * dy);
+
+                if (now - lastTrail > 24) {
+                    makeTrail(x, y);
+                    lastTrail = now;
+                }
+
+                if (speed > 28 && now - lastComet > 90) {
+                    makeComet(x, y, Math.atan2(dy, dx));
+                    lastComet = now;
+                }
+
+                lastX = x;
+                lastY = y;
+            });
+
+            doc.addEventListener("mouseleave", function () {
+                glow.style.opacity = "0";
+            });
+
+            doc.addEventListener("click", function (e) {
+                const ring = doc.createElement("div");
+                ring.className = "neon-click-ring";
+                ring.style.left = e.clientX + "px";
+                ring.style.top = e.clientY + "px";
+                doc.body.appendChild(ring);
+                setTimeout(() => ring.remove(), 750);
+            });
+        })();
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
+
+
+# FIX: lock_sidebar_open removed — it was hiding the native Streamlit
+# collapse arrow on hover via a setInterval that matched "collapse"/"sidebar"
+# in button aria-labels. The custom toggle button in the main area handles
+# show/hide instead.
+def lock_sidebar_open():
+    pass
+
+
+def force_sidebar_visible():
+    pass
 
 
 # =========================
@@ -930,7 +1429,9 @@ def prepare_dataframe(uploaded_file):
 # FILE UPLOAD FIRST
 # =========================
 existing_file = st.session_state.get("uploaded_file_object", None)
+
 load_css(has_file=existing_file is not None)
+render_neon_mouse_effects()
 
 if existing_file is None:
     st.markdown("""
@@ -985,6 +1486,8 @@ with st.sidebar:
     <div class="sidebar-summary-item">Total Investors<div class="sidebar-summary-value">{total_count}</div></div>
     <div class="sidebar-summary-item">File<div class="sidebar-summary-value">{uploaded_name}</div></div>
     """, unsafe_allow_html=True)
+
+
 
 
 # =========================
@@ -1218,9 +1721,73 @@ elif page == "Cleaned Tracker":
 
 elif page == "Lead Scoring":
     st.markdown('<div class="section-title">Investor Scoring Breakdown</div>', unsafe_allow_html=True)
-    scoring_columns = ["Investor", "Type", "Location", "Investment Thesis", "Score", "Priority"]
-    scored_df = df.sort_values(by="Score", ascending=False)
-    render_priority_table(scored_df[scoring_columns])
+
+    scoring_columns = [
+        "Investor",
+        "Type",
+        "Location",
+        "Investment Thesis",
+        "Score",
+        "Priority"
+    ]
+
+    priority_order = {
+        "High": 1,
+        "Medium": 2,
+        "Low": 3
+    }
+
+    scored_df = df.copy()
+    scored_df["Priority Rank"] = scored_df["Priority"].map(priority_order).fillna(4)
+    scored_df = scored_df.sort_values(
+        by=["Priority Rank", "Score"],
+        ascending=[True, False]
+    )
+
+    display_df = scored_df[scoring_columns].copy()
+    display_df["Priority"] = display_df["Priority"].apply(priority_badge)
+
+    html = display_df.to_html(index=False, escape=False)
+
+    st.markdown(
+        f"""
+        <div style="
+            border:1px solid rgba(148,163,184,0.18);
+            border-radius:14px;
+            overflow:hidden;
+            max-height:650px;
+            overflow-y:auto;
+        ">
+            {html}
+        </div>
+        <style>
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            color: #e5e7eb;
+            font-size: 13px;
+        }}
+        th {{
+            background: rgba(30, 41, 59, 0.95);
+            color: #94a3b8;
+            text-align: left;
+            padding: 12px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }}
+        td {{
+            background: rgba(15, 23, 42, 0.72);
+            border-top: 1px solid rgba(148, 163, 184, 0.12);
+            padding: 12px;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
 elif page == "Outreach Prep":
     st.markdown('<div class="section-title">Outreach Preparation Workspace</div>', unsafe_allow_html=True)
@@ -1316,8 +1883,6 @@ elif page == "Outreach Prep":
         st.write("**Investor:**", selected_row.get("Investor", ""))
         st.write("**Type:**", selected_row.get("Type", ""))
         st.write("**Location:**", selected_row.get("Location", ""))
-        st.write("**Website:**", selected_row.get("Website", ""))
-
         st.markdown("<br>", unsafe_allow_html=True)
 
         st.write("### Primary Contact")
