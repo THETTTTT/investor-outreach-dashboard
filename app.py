@@ -10,6 +10,7 @@ import smtplib
 import ssl
 from email.message import EmailMessage
 from datetime import datetime
+import time
 
 
 # =========================
@@ -1313,19 +1314,52 @@ Thet
 """
 
 
-def send_email_smtp(smtp_server, smtp_port, sender_email, password, recipient, subject, body):
+def get_first_name(name):
+    name = str(name).strip()
+    if not name or name.lower() in ["nan", "none", "not found", "no input", "team"]:
+        return ""
+    return name.split()[0]
+
+
+def render_email_template(template, row, sender_name, sender_company):
+    first_name = get_first_name(row.get("1st PiC", "")) or get_first_name(row.get("Hunter Name", ""))
+    greeting = f"Hi {first_name}," if first_name else "Hi,"
+
+    values = {
+        "greeting": greeting,
+        "investor": str(row.get("Investor", "")).strip(),
+        "investment_thesis": str(row.get("Investment Thesis", "")).strip(),
+        "type": str(row.get("Type", "")).strip(),
+        "location": str(row.get("Location", "")).strip(),
+        "sender_name": sender_name,
+        "sender_company": sender_company,
+    }
+
+    for key, value in values.items():
+        template = template.replace("{" + key + "}", value)
+
+    return template
+
+
+def send_email_smtp(smtp_server, smtp_port, sender_email, password, recipient, subject, body, cc=""):
     msg = EmailMessage()
     msg["From"] = sender_email
     msg["To"] = recipient
+    if cc.strip():
+        msg["Cc"] = cc
     msg["Subject"] = subject
     msg.set_content(body)
+
+    recipients = [recipient]
+    if cc.strip():
+        recipients += [x.strip() for x in cc.split(",") if x.strip()]
 
     context = ssl.create_default_context()
 
     with smtplib.SMTP(smtp_server, smtp_port) as server:
         server.starttls(context=context)
         server.login(sender_email, password)
-        server.send_message(msg)
+        server.send_message(msg, to_addrs=recipients)
 
 
 def priority_badge(priority):
@@ -1360,11 +1394,706 @@ def render_priority_table(dataframe):
     )
 
 
-def prepare_dataframe(uploaded_file):
-    df_original = pd.read_excel(uploaded_file)
-    original_count = len(df_original)
 
+def normalize_column_name(col):
+    """Normalize messy column headers for matching."""
+    col = "" if pd.isna(col) else str(col)
+    col = col.strip().lower()
+    col = re.sub(r"[^a-z0-9]+", " ", col)
+    return re.sub(r"\s+", " ", col).strip()
+
+
+STANDARD_COLUMNS = [
+    "Investor", "Type", "Location", "Website",
+    "1st PiC", "Email 1", "2nd PiC", "Email 2",
+    "Investment Thesis", "Status"
+]
+
+REQUIRED_IMPORT_COLUMNS = ["Investor"]
+IMPORTANT_IMPORT_COLUMNS = ["Investor", "Email 1", "Website", "1st PiC", "Type", "Location", "Investment Thesis"]
+OPTIONAL_IMPORT_COLUMNS = ["2nd PiC", "Email 2", "Status"]
+
+COLUMN_ALIASES = {
+    # Investor / company / fund name
+    "investor": "Investor", "investor name": "Investor", "organisation": "Investor",
+    "organization": "Investor", "organisation name": "Investor", "organization name": "Investor",
+    "company": "Investor", "company name": "Investor", "company names": "Investor",
+    "target company": "Investor", "target": "Investor", "firm": "Investor", "firm name": "Investor",
+    "fund": "Investor", "fund name": "Investor", "fund manager": "Investor", "asset manager": "Investor",
+    "manager": "Investor", "institution": "Investor", "entity": "Investor", "fof name": "Investor",
+    "vc name": "Investor", "gp": "Investor", "general partner firm": "Investor",
+
+    # Type
+    "type": "Type", "investor type": "Type", "fund type": "Type", "category": "Type",
+    "classification": "Type", "sector": "Type", "industry": "Type", "vertical": "Type",
+
+    # Location
+    "location": "Location", "country": "Location", "region": "Location", "geography": "Location",
+    "market": "Location", "hq": "Location", "headquarters": "Location", "office location": "Location",
+    "address": "Location", "city": "Location", "base": "Location", "based in": "Location",
+
+    # Website
+    "website": "Website", "web site": "Website", "url": "Website", "website url": "Website",
+    "company website": "Website", "homepage": "Website", "domain": "Website", "site": "Website",
+    "linkedin": "Website", "linkedin url": "Website", "source url": "Website", "link": "Website",
+
+    # Primary contact
+    "name": "1st PiC", "contact": "1st PiC", "contact name": "1st PiC", "person": "1st PiC",
+    "pic": "1st PiC", "1st pic": "1st PiC", "primary contact": "1st PiC", "contact person": "1st PiC",
+    "representative": "1st PiC", "partner": "1st PiC", "partner name": "1st PiC", "full name": "1st PiC",
+    "decision maker": "1st PiC", "contact 1": "1st PiC", "pic 1": "1st PiC",
+
+    # Primary email
+    "email": "Email 1", "email address": "Email 1", "e mail": "Email 1", "mail": "Email 1",
+    "contact email": "Email 1", "primary email": "Email 1", "email 1": "Email 1", "1st email": "Email 1",
+    "pic email": "Email 1", "contact email 1": "Email 1",
+
+    # Secondary contact/email
+    "second contact": "2nd PiC", "secondary contact": "2nd PiC", "2nd pic": "2nd PiC",
+    "contact 2": "2nd PiC", "second name": "2nd PiC", "secondary name": "2nd PiC", "pic 2": "2nd PiC",
+    "secondary email": "Email 2", "second email": "Email 2", "email 2": "Email 2", "2nd email": "Email 2",
+    "contact email 2": "Email 2",
+
+    # Thesis / notes
+    "investment thesis": "Investment Thesis", "thesis": "Investment Thesis", "focus": "Investment Thesis",
+    "investment focus": "Investment Thesis", "mandate": "Investment Thesis", "strategy": "Investment Thesis",
+    "notes": "Investment Thesis", "note": "Investment Thesis", "description": "Investment Thesis",
+    "remarks": "Investment Thesis", "comment": "Investment Thesis", "comments": "Investment Thesis",
+    "memo": "Investment Thesis", "criteria": "Investment Thesis",
+
+    # Status
+    "status": "Status", "outreach status": "Status", "stage": "Status", "progress": "Status",
+    "follow up": "Status", "follow up status": "Status",
+}
+
+HEADER_KEYWORDS = set(COLUMN_ALIASES.keys()) | {
+    "email", "organization", "organisation", "company", "fund", "name", "type", "title",
+    "notes", "source", "website", "location", "sector", "partner", "country", "url"
+}
+
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+URL_RE = re.compile(r"(https?://|www\.|linkedin\.com|[A-Za-z0-9-]+\.(com|co|io|ai|net|org|vc|sg|jp|vn|uk|de|fr|id|my|th|ph|au|hk)(/|\b))", re.I)
+BAD_INVESTOR_HEADERS = {"no", "no.", "number", "s n", "sn", "sno", "id", "index", "rank", "#"}
+STATUS_WORDS = {"not contacted", "contacted", "follow up", "follow-up", "sent", "replied", "meeting", "rejected", "interested", "pending", "done"}
+COMMON_COUNTRIES = {
+    "singapore", "japan", "vietnam", "viet nam", "usa", "us", "united states", "uk", "united kingdom",
+    "hong kong", "china", "india", "indonesia", "malaysia", "thailand", "philippines", "korea",
+    "south korea", "taiwan", "australia", "germany", "france", "netherlands", "switzerland", "canada"
+}
+
+
+def safe_text_series(series):
+    return series.fillna("").astype(str).replace({"nan": "", "None": "", "NaN": ""})
+
+
+
+def clean_cell_value(value):
+    """Clean one Excel cell into safe text."""
+    if pd.isna(value):
+        return ""
+    value = str(value).strip()
+    if value.lower() in ["nan", "none", "null", "n/a", "na"]:
+        return ""
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def extract_emails_from_text(text):
+    """Extract all emails from any messy text/cell/row."""
+    text = "" if pd.isna(text) else str(text)
+    emails = EMAIL_RE.findall(text)
+    cleaned = []
+    for email in emails:
+        email = str(email).strip().strip(".,;:()[]{}<>").lower()
+        if email and email not in cleaned:
+            cleaned.append(email)
+    return cleaned
+
+
+def extract_urls_from_text(text):
+    """Extract website/linkedin/domain-like URLs from messy text."""
+    text = "" if pd.isna(text) else str(text)
+    url_pattern = re.compile(
+        r"((?:https?://|www\.)[^\s,;]+|(?:[A-Za-z0-9-]+\.)+(?:com|co|io|ai|net|org|vc|sg|jp|vn|uk|de|fr|id|my|th|ph|au|hk)(?:/[^\s,;]*)?)",
+        re.I,
+    )
+    urls = []
+    for match in url_pattern.findall(text):
+        url = str(match).strip().strip(".,;:()[]{}<>")
+        if not url:
+            continue
+        if "@" in url:
+            continue
+        if not url.startswith(("http://", "https://")):
+            url = "https://" + url.lstrip("/")
+        if url not in urls:
+            urls.append(url)
+    return urls
+
+
+def is_blankish(value):
+    return clean_cell_value(value) == ""
+
+
+def is_bad_investor_value(value):
+    v = normalize_column_name(value)
+    if not v:
+        return True
+    if v in BAD_INVESTOR_HEADERS:
+        return True
+    if re.fullmatch(r"[0-9,\.\-]+", v):
+        return True
+    if EMAIL_RE.search(str(value)) or URL_RE.search(str(value)):
+        return True
+    if len(v) <= 1:
+        return True
+    return False
+
+
+def looks_like_person_name(value):
+    """Basic person-name heuristic so people do not become Investor."""
+    value = clean_cell_value(value)
+    if not value or EMAIL_RE.search(value) or URL_RE.search(value):
+        return False
+    words = value.split()
+    if len(words) < 2 or len(words) > 4:
+        return False
+    business_terms = ["capital", "ventures", "partners", "fund", "management", "group", "holdings", "company", "corp", "llc", "ltd", "pte", "inc", "bank"]
+    if any(term in value.lower() for term in business_terms):
+        return False
+    return all(w[:1].isupper() for w in words if w[:1].isalpha())
+
+
+def choose_first_nonempty_from_columns(row, columns):
+    for col in columns:
+        if col in row.index:
+            val = clean_cell_value(row.get(col, ""))
+            if val:
+                return val
+    return ""
+
+
+def best_columns_for_target(df_raw, target, min_score=25):
+    scored = []
+    for raw_col in df_raw.columns:
+        score = score_column_for_target(raw_col, df_raw[raw_col], target)
+        if score >= min_score:
+            scored.append((score, raw_col))
+    scored.sort(reverse=True)
+    return [col for _, col in scored]
+
+
+def extract_fields_rowwise(df_raw, standardized, mapping_used):
+    """
+    Row-level extractor: after column mapping, scan each whole row to pull key fields.
+    This makes messy trackers more accurate because emails/URLs/notes can be extracted
+    even when the column names are strange or the mapping is imperfect.
+    """
+    result = standardized.copy()
+
+    investor_candidates = best_columns_for_target(df_raw, "Investor", min_score=25)
+    pic_candidates = best_columns_for_target(df_raw, "1st PiC", min_score=25)
+    type_candidates = best_columns_for_target(df_raw, "Type", min_score=25)
+    location_candidates = best_columns_for_target(df_raw, "Location", min_score=25)
+    thesis_candidates = best_columns_for_target(df_raw, "Investment Thesis", min_score=20)
+
+    # Prefer business-name columns over serial numbers and person-name columns.
+    investor_candidates = [
+        c for c in investor_candidates
+        if normalize_column_name(c) not in BAD_INVESTOR_HEADERS
+        and email_ratio(df_raw[c]) < 0.05
+        and url_ratio(df_raw[c]) < 0.25
+        and numeric_ratio(df_raw[c]) < 0.45
+    ]
+
+    for idx, raw_row in df_raw.iterrows():
+        row_values = [clean_cell_value(v) for v in raw_row.tolist()]
+        row_text = " | ".join([v for v in row_values if v])
+
+        # Emails: extract from the whole row, not just mapped column.
+        emails = extract_emails_from_text(row_text)
+        if emails:
+            if is_blankish(result.at[idx, "Email 1"]):
+                result.at[idx, "Email 1"] = emails[0]
+            if len(emails) > 1 and is_blankish(result.at[idx, "Email 2"]):
+                result.at[idx, "Email 2"] = emails[1]
+
+        # Website/source link: extract from mapped website or whole row.
+        current_website = clean_cell_value(result.at[idx, "Website"])
+        website_urls = extract_urls_from_text(current_website) or extract_urls_from_text(row_text)
+        if website_urls:
+            result.at[idx, "Website"] = website_urls[0]
+
+        # Investor: if blank/bad, extract from strongest business-name column.
+        current_investor = clean_cell_value(result.at[idx, "Investor"])
+        if is_bad_investor_value(current_investor):
+            for col in investor_candidates:
+                val = clean_cell_value(raw_row.get(col, ""))
+                if not is_bad_investor_value(val) and not looks_like_person_name(val):
+                    result.at[idx, "Investor"] = val
+                    break
+
+        # Contact person: if blank, extract from name/person/partner columns.
+        if is_blankish(result.at[idx, "1st PiC"]):
+            for col in pic_candidates:
+                val = clean_cell_value(raw_row.get(col, ""))
+                if val and not EMAIL_RE.search(val) and not URL_RE.search(val) and not re.fullmatch(r"[0-9,\.\-]+", val):
+                    # Avoid copying organization name into PIC.
+                    if normalize_column_name(val) != normalize_column_name(result.at[idx, "Investor"]):
+                        result.at[idx, "1st PiC"] = val
+                        break
+
+        # Type/location fallback.
+        if is_blankish(result.at[idx, "Type"]):
+            result.at[idx, "Type"] = choose_first_nonempty_from_columns(raw_row, type_candidates)
+        if is_blankish(result.at[idx, "Location"]):
+            result.at[idx, "Location"] = choose_first_nonempty_from_columns(raw_row, location_candidates)
+
+        # Thesis/notes: combine useful text columns; avoid emails/URLs/serial numbers.
+        if is_blankish(result.at[idx, "Investment Thesis"]):
+            note_parts = []
+            for col in thesis_candidates:
+                val = clean_cell_value(raw_row.get(col, ""))
+                if not val:
+                    continue
+                if EMAIL_RE.fullmatch(val) or URL_RE.fullmatch(val) or re.fullmatch(r"[0-9,\.\-]+", val):
+                    continue
+                if normalize_column_name(val) == normalize_column_name(result.at[idx, "Investor"]):
+                    continue
+                if val not in note_parts:
+                    note_parts.append(val)
+            if note_parts:
+                result.at[idx, "Investment Thesis"] = " | ".join(note_parts[:3])
+
+    return result
+
+
+def column_sample(series, n=80):
+    return safe_text_series(series).str.strip().replace("", pd.NA).dropna().head(n).tolist()
+
+
+def email_ratio(series):
+    vals = column_sample(series)
+    return 0 if not vals else sum(bool(EMAIL_RE.search(v)) for v in vals) / len(vals)
+
+
+def url_ratio(series):
+    vals = column_sample(series)
+    return 0 if not vals else sum(bool(URL_RE.search(v)) for v in vals) / len(vals)
+
+
+def numeric_ratio(series):
+    vals = column_sample(series)
+    if not vals:
+        return 0
+    return sum(bool(re.fullmatch(r"[\d,\.\-\s]+", v)) for v in vals) / len(vals)
+
+
+def country_ratio(series):
+    vals = [normalize_column_name(v) for v in column_sample(series)]
+    if not vals:
+        return 0
+    count = 0
+    for v in vals:
+        if v in COMMON_COUNTRIES or any(country in v for country in COMMON_COUNTRIES):
+            count += 1
+    return count / len(vals)
+
+
+def average_words(series):
+    vals = column_sample(series)
+    if not vals:
+        return 0
+    return sum(len(str(v).split()) for v in vals) / len(vals)
+
+
+def header_tokens(raw_col):
+    return set(normalize_column_name(raw_col).split())
+
+
+def score_column_for_target(raw_col, series, target):
+    """Score a raw column against a standard app column using header + content patterns."""
+    norm = normalize_column_name(raw_col)
+    tokens = header_tokens(raw_col)
+    vals = column_sample(series)
+    e_ratio = email_ratio(series)
+    u_ratio = url_ratio(series)
+    n_ratio = numeric_ratio(series)
+    c_ratio = country_ratio(series)
+    avg_words = average_words(series)
+    non_empty = len(vals)
+    score = 0
+
+    if not non_empty:
+        return -100
+
+    # Never map serial number/index columns to meaningful fields.
+    if norm in BAD_INVESTOR_HEADERS or tokens & {"no", "number", "id", "index", "rank"}:
+        if target not in []:
+            score -= 80
+
+    # Strong exact alias bonus.
+    if norm in COLUMN_ALIASES and COLUMN_ALIASES[norm] == target:
+        score += 55
+
+    if target == "Email 1":
+        score += e_ratio * 100
+        if "email" in tokens or "mail" in tokens:
+            score += 35
+        if any(x in norm for x in ["2", "second", "secondary"]):
+            score -= 35
+        score -= u_ratio * 20 + n_ratio * 30
+
+    elif target == "Email 2":
+        score += e_ratio * 95
+        if "email" in tokens or "mail" in tokens:
+            score += 25
+        if any(x in norm for x in ["2", "second", "secondary"]):
+            score += 30
+        else:
+            score -= 20
+        score -= u_ratio * 20 + n_ratio * 30
+
+    elif target == "Website":
+        score += u_ratio * 100
+        if tokens & {"website", "url", "domain", "homepage", "site", "link", "linkedin"}:
+            score += 45
+        # Source is only website if the content actually contains links.
+        if "source" in tokens and u_ratio < 0.25:
+            score -= 30
+        score -= e_ratio * 25 + n_ratio * 25
+
+    elif target == "Investor":
+        if tokens & {"organization", "organisation", "company", "firm", "fund", "investor", "entity", "manager", "institution", "gp"}:
+            score += 60
+        if norm in ["name", "fund name", "company name", "organisation name", "organization name", "investor name"]:
+            score += 35
+        if tokens & {"contact", "person", "partner", "pic", "email", "title", "role"}:
+            score -= 35
+        if e_ratio > 0.05 or u_ratio > 0.2 or n_ratio > 0.55:
+            score -= 65
+        if 1 <= avg_words <= 6:
+            score += 15
+        if avg_words > 10:
+            score -= 10
+
+    elif target == "1st PiC":
+        if tokens & {"name", "contact", "person", "partner", "pic", "representative"}:
+            score += 45
+        if tokens & {"organization", "organisation", "company", "firm", "fund", "investor"}:
+            score -= 45
+        if any(x in norm for x in ["2", "second", "secondary"]):
+            score -= 35
+        if e_ratio > 0.05 or u_ratio > 0.05 or n_ratio > 0.25:
+            score -= 60
+        if 1 <= avg_words <= 4:
+            score += 20
+        if "title" in tokens or "role" in tokens or "position" in tokens:
+            score -= 30
+
+    elif target == "2nd PiC":
+        if tokens & {"name", "contact", "person", "partner", "pic", "representative"}:
+            score += 35
+        if any(x in norm for x in ["2", "second", "secondary"]):
+            score += 30
+        else:
+            score -= 25
+        if tokens & {"organization", "organisation", "company", "firm", "fund", "investor"}:
+            score -= 45
+        if e_ratio > 0.05 or u_ratio > 0.05 or n_ratio > 0.25:
+            score -= 60
+
+    elif target == "Type":
+        if tokens & {"type", "category", "classification", "sector", "industry", "vertical"}:
+            score += 60
+        if e_ratio > 0.05 or u_ratio > 0.2 or n_ratio > 0.4:
+            score -= 45
+        if avg_words <= 5:
+            score += 10
+
+    elif target == "Location":
+        if tokens & {"location", "country", "region", "geography", "market", "hq", "headquarters", "city", "address", "base"}:
+            score += 55
+        score += c_ratio * 45
+        if e_ratio > 0.05 or u_ratio > 0.15 or n_ratio > 0.45:
+            score -= 45
+        if avg_words <= 5:
+            score += 8
+
+    elif target == "Investment Thesis":
+        if tokens & {"thesis", "focus", "strategy", "mandate", "notes", "note", "description", "remarks", "comment", "comments", "criteria", "memo"}:
+            score += 55
+        if "source" in tokens:
+            # Source becomes thesis only when it is text notes, not links.
+            score += 20 if u_ratio < 0.2 else -35
+        if "title" in tokens or "role" in tokens or "position" in tokens:
+            score += 8
+        if avg_words >= 5:
+            score += 18
+        if e_ratio > 0.05 or u_ratio > 0.35 or n_ratio > 0.5:
+            score -= 35
+
+    elif target == "Status":
+        if tokens & {"status", "stage", "progress"}:
+            score += 60
+        vals_norm = [normalize_column_name(v) for v in vals]
+        if vals_norm:
+            score += (sum(any(sw in v for sw in STATUS_WORDS) for v in vals_norm) / len(vals_norm)) * 45
+        if e_ratio > 0.05 or u_ratio > 0.1:
+            score -= 40
+
+    return score
+
+
+def guess_standard_column(raw_col):
+    """Fast header-only fallback for header row detection."""
+    normalized = normalize_column_name(raw_col)
+    if normalized in COLUMN_ALIASES:
+        return COLUMN_ALIASES[normalized]
+    if normalized in BAD_INVESTOR_HEADERS:
+        return None
+    if any(word in normalized for word in ["email", "e mail", "mail"]):
+        return "Email 2" if any(word in normalized for word in ["2", "second", "secondary"]) else "Email 1"
+    if any(word in normalized for word in ["website", "url", "domain", "homepage", "linkedin"]):
+        return "Website"
+    if any(word in normalized for word in ["company", "organization", "organisation", "fund", "firm", "investor"]):
+        return "Investor"
+    if any(word in normalized for word in ["country", "location", "region", "market", "geography", "hq", "headquarter"]):
+        return "Location"
+    if any(word in normalized for word in ["thesis", "focus", "strategy", "mandate", "notes", "description", "remarks", "comment"]):
+        return "Investment Thesis"
+    if "type" in normalized or "category" in normalized or "classification" in normalized or "sector" in normalized:
+        return "Type"
+    if any(word in normalized for word in ["contact", "person", "pic", "representative", "partner", "name"]):
+        return "2nd PiC" if any(word in normalized for word in ["2", "second", "secondary"]) else "1st PiC"
+    return None
+
+
+def score_header_row(values):
+    """Score how likely a row is the real table header."""
+    score = 0
+    non_empty = 0
+    mapped_targets = set()
+    for value in values:
+        if pd.isna(value) or str(value).strip() == "":
+            continue
+        non_empty += 1
+        normalized = normalize_column_name(value)
+        guessed = guess_standard_column(value)
+        if normalized in HEADER_KEYWORDS:
+            score += 4
+        if guessed:
+            mapped_targets.add(guessed)
+            score += 8
+        if normalized in ["email", "name", "organization", "organisation", "company", "type", "website", "notes", "sector"]:
+            score += 4
+    score += min(non_empty, 10)
+    score += len(mapped_targets) * 6
+    return score
+
+
+def detect_header_row(raw_no_header_df, max_scan_rows=40):
+    """Find the header row even when the Excel file has title/logo rows above the table."""
+    best_idx = 0
+    best_score = -1
+    rows_to_scan = min(len(raw_no_header_df), max_scan_rows)
+    for idx in range(rows_to_scan):
+        row_values = raw_no_header_df.iloc[idx].tolist()
+        score = score_header_row(row_values)
+        if score > best_score:
+            best_score = score
+            best_idx = idx
+    return best_idx, best_score
+
+
+def make_unique_columns(columns):
+    """Avoid duplicate column names after cleaning."""
+    seen = {}
+    result = []
+    for col in columns:
+        col = "" if pd.isna(col) else str(col).strip()
+        if col == "":
+            col = "Unnamed"
+        if col in seen:
+            seen[col] += 1
+            result.append(f"{col}_{seen[col]}")
+        else:
+            seen[col] = 0
+            result.append(col)
+    return result
+
+
+def read_uploaded_file_smart(uploaded_file):
+    """Read CSV/XLS/XLSX and return the best detected table as a dataframe."""
+    file_name = uploaded_file.name.lower()
+    try:
+        uploaded_file.seek(0)
+    except Exception:
+        pass
+
+    if file_name.endswith(".csv"):
+        raw_no_header = pd.read_csv(uploaded_file, header=None, dtype=str, encoding_errors="ignore")
+        header_idx, header_score = detect_header_row(raw_no_header)
+        headers = make_unique_columns(raw_no_header.iloc[header_idx].tolist())
+        df = raw_no_header.iloc[header_idx + 1:].copy()
+        df.columns = headers
+        return df.dropna(how="all"), "CSV", header_idx + 1, header_score
+
+    try:
+        uploaded_file.seek(0)
+    except Exception:
+        pass
+
+    sheets = pd.read_excel(uploaded_file, sheet_name=None, header=None, dtype=str)
+    best = None
+    for sheet_name, raw_no_header in sheets.items():
+        if raw_no_header.empty:
+            continue
+        header_idx, header_score = detect_header_row(raw_no_header)
+        current = (header_score, sheet_name, header_idx, raw_no_header)
+        if best is None or current[0] > best[0]:
+            best = current
+
+    if best is None:
+        raise ValueError("No readable sheet found in the uploaded file.")
+
+    header_score, sheet_name, header_idx, raw_no_header = best
+    headers = make_unique_columns(raw_no_header.iloc[header_idx].tolist())
+    df = raw_no_header.iloc[header_idx + 1:].copy()
+    df.columns = headers
+    return df.dropna(how="all"), sheet_name, header_idx + 1, header_score
+
+
+def build_auto_mapping(df_raw):
+    """Choose the best raw column for each app column using content-aware scoring."""
+    candidate_scores = []
+    for raw_col in df_raw.columns:
+        for target in STANDARD_COLUMNS:
+            score = score_column_for_target(raw_col, df_raw[raw_col], target)
+            candidate_scores.append((score, raw_col, target))
+
+    # Assign high-confidence fields first so No./Source won't steal important mappings.
+    target_priority = ["Email 1", "Email 2", "Website", "Investor", "1st PiC", "2nd PiC", "Type", "Location", "Investment Thesis", "Status"]
+    mapping = {col: "" for col in STANDARD_COLUMNS}
+    confidence = {col: 0 for col in STANDARD_COLUMNS}
+    used_cols = set()
+
+    for target in target_priority:
+        candidates = sorted(
+            [(s, c) for s, c, t in candidate_scores if t == target and c not in used_cols],
+            reverse=True
+        )
+        if not candidates:
+            continue
+        best_score, best_col = candidates[0]
+        threshold = 35
+        if target in ["Investor", "Email 1"]:
+            threshold = 45
+        if target in ["Email 2", "2nd PiC", "Status"]:
+            threshold = 50
+        if best_score >= threshold:
+            mapping[target] = best_col
+            confidence[target] = round(min(max(best_score, 0), 100), 1)
+            used_cols.add(best_col)
+
+    # If no investor yet, do a safer fallback: choose text column with company-like header/content, never No./ID/email/url.
+    if not mapping["Investor"]:
+        fallback_candidates = []
+        for raw_col in df_raw.columns:
+            if raw_col in used_cols:
+                continue
+            norm = normalize_column_name(raw_col)
+            if norm in BAD_INVESTOR_HEADERS or "email" in norm or "mail" in norm:
+                continue
+            if email_ratio(df_raw[raw_col]) > 0.05 or url_ratio(df_raw[raw_col]) > 0.15 or numeric_ratio(df_raw[raw_col]) > 0.35:
+                continue
+            score = 10
+            if any(x in norm for x in ["org", "company", "firm", "fund", "investor", "manager"]):
+                score += 50
+            score += min(len(column_sample(df_raw[raw_col])), 30) / 3
+            fallback_candidates.append((score, raw_col))
+        if fallback_candidates:
+            fallback_candidates.sort(reverse=True)
+            mapping["Investor"] = fallback_candidates[0][1]
+            confidence["Investor"] = round(min(fallback_candidates[0][0], 75), 1)
+
+    return mapping, confidence
+
+
+def standardize_uploaded_dataframe(raw_df, manual_mapping=None):
+    """Convert any uploaded tracker into the app's standard columns."""
+    df_raw = raw_df.copy().dropna(how="all")
+    df_raw.columns = make_unique_columns([str(c).strip() for c in df_raw.columns])
+
+    if manual_mapping:
+        mapping_used = {col: manual_mapping.get(col, "") for col in STANDARD_COLUMNS}
+        confidence = {col: 100 if mapping_used.get(col) else 0 for col in STANDARD_COLUMNS}
+    else:
+        mapping_used, confidence = build_auto_mapping(df_raw)
+
+    standardized = pd.DataFrame(index=df_raw.index)
+    used_raw_cols = set()
+    for standard_col in STANDARD_COLUMNS:
+        raw_col = mapping_used.get(standard_col, "")
+        if raw_col and raw_col in df_raw.columns:
+            standardized[standard_col] = df_raw[raw_col]
+            used_raw_cols.add(raw_col)
+        else:
+            standardized[standard_col] = ""
+            mapping_used[standard_col] = ""
+
+    # Combine obvious notes/title/source text into thesis only if thesis is blank.
+    extra_note_cols = []
+    for raw_col in df_raw.columns:
+        norm = normalize_column_name(raw_col)
+        if raw_col in used_raw_cols:
+            continue
+        if any(x in norm for x in ["note", "description", "focus", "strategy", "remark", "comment", "criteria", "memo", "title"]):
+            if email_ratio(df_raw[raw_col]) < 0.05 and url_ratio(df_raw[raw_col]) < 0.3:
+                extra_note_cols.append(raw_col)
+
+    if extra_note_cols:
+        extra_notes = df_raw[extra_note_cols].fillna("").astype(str).agg(" | ".join, axis=1).str.strip(" |")
+        empty_thesis = standardized["Investment Thesis"].fillna("").astype(str).str.strip() == ""
+        standardized.loc[empty_thesis, "Investment Thesis"] = extra_notes[empty_thesis]
+        if not mapping_used.get("Investment Thesis"):
+            mapping_used["Investment Thesis"] = " + ".join(extra_note_cols)
+            confidence["Investment Thesis"] = 60
+
+    standardized = standardized[STANDARD_COLUMNS]
+
+    # NEW: extract key fields row-by-row from the full uploaded sheet.
+    # This is more accurate than relying only on column names because messy Excel files
+    # often hide emails, URLs, notes, or source links in unexpected columns.
+    standardized = extract_fields_rowwise(df_raw, standardized, mapping_used)
+
+    for col in STANDARD_COLUMNS:
+        standardized[col] = standardized[col].fillna("").astype(str).str.strip()
+        standardized[col] = standardized[col].replace({"nan": "", "None": "", "NaN": ""})
+
+    # Remove rows that are clearly not real leads.
+    standardized = standardized.dropna(how="all")
+    standardized = standardized[standardized.apply(lambda row: any(str(x).strip() for x in row), axis=1)]
+    standardized = standardized[~standardized["Investor"].apply(is_bad_investor_value)]
+
+    warnings = []
+    if standardized["Investor"].astype(str).str.strip().eq("").all():
+        warnings.append("Investor / company name was not detected. Please choose the correct column below.")
+    if standardized["Email 1"].astype(str).str.strip().eq("").all():
+        warnings.append("No primary email detected. You can still use the dashboard, but email sending needs an email column.")
+    if standardized["Website"].astype(str).str.strip().eq("").all():
+        warnings.append("No website detected. Hunter/company email lookup may have fewer results.")
+
+    return standardized, mapping_used, warnings, confidence
+
+
+def prepare_dataframe_from_df(df_original):
+    """Prepare an already-standardized dataframe for dashboard/scoring/outreach."""
+    original_count = len(df_original)
     df = df_original.copy().dropna(how="all")
+
+    for col in STANDARD_COLUMNS:
+        if col not in df.columns:
+            df[col] = ""
 
     text_columns = [
         "Investor", "Type", "Location", "Website",
@@ -1375,11 +2104,16 @@ def prepare_dataframe(uploaded_file):
     for col in text_columns:
         if col in df.columns:
             df[col] = df[col].fillna("").astype(str).str.strip()
+            df[col] = df[col].replace({"nan": "", "None": "", "NaN": ""})
+
+    useful_cols = [col for col in ["Investor", "Website", "Email 1", "1st PiC"] if col in df.columns]
+    if useful_cols:
+        df = df[df[useful_cols].apply(lambda row: any(str(x).strip() for x in row), axis=1)]
 
     required_subset = [col for col in ["Investor", "Website", "Email 1"] if col in df.columns]
     df = df.drop_duplicates(subset=required_subset) if required_subset else df.drop_duplicates()
 
-    for col in ["Website", "Investor", "Type", "Location", "Investment Thesis", "Email 1"]:
+    for col in ["Website", "Investor", "Type", "Location", "Investment Thesis", "Email 1", "Email 2", "1st PiC", "2nd PiC"]:
         if col not in df.columns:
             df[col] = ""
 
@@ -1387,26 +2121,15 @@ def prepare_dataframe(uploaded_file):
     duplicates_removed = original_count - cleaned_count
 
     df["Domain"] = df["Website"].apply(clean_domain)
-    df["Generic Email"] = df["Domain"].apply(generate_generic_email)
-    df["Contact Email"] = df["Domain"].apply(generate_contact_email)
-    df["Website Email"] = ""
-    df["Best Company Email"] = df.apply(get_best_company_email, axis=1)
+
+    if "Company Email" not in df.columns:
+        df["Company Email"] = ""
     df["LinkedIn Search"] = df["Investor"].apply(generate_linkedin_search)
     df["Possible Contact Page"] = df["Domain"].apply(generate_contact_page)
 
     hunter_columns = [
-        "Hunter Email",
-        "Hunter Name",
-        "Hunter Position",
-        "Hunter LinkedIn",
-        "Hunter Confidence",
-        "Hunter Source",
-        "Hunter Company Website",
-        "Hunter Company Name",
-        "Hunter Company LinkedIn",
-        "Hunter Company Source",
-        "Website Email",
-        "Best Company Email"
+        "Hunter Email", "Hunter Name", "Hunter Position", "Hunter LinkedIn", "Hunter Confidence", "Hunter Source",
+        "Hunter Company Website", "Hunter Company Name", "Hunter Company LinkedIn", "Hunter Company Source", "Company Email"
     ]
 
     for col in hunter_columns:
@@ -1419,38 +2142,193 @@ def prepare_dataframe(uploaded_file):
 
     if "Status" not in df.columns:
         df["Status"] = "Not Contacted"
-
     df["Status"] = df["Status"].fillna("Not Contacted").replace("", "Not Contacted")
 
     return df, original_count, duplicates_removed
 
 
+def prepare_dataframe(uploaded_file):
+    """Backward-compatible wrapper for direct file processing."""
+    raw_df, _, _, _ = read_uploaded_file_smart(uploaded_file)
+    standardized_df, _, _, _ = standardize_uploaded_dataframe(raw_df)
+    return prepare_dataframe_from_df(standardized_df)
+
+
+def confidence_badge(score):
+    if score >= 70:
+        return "✅ High"
+    if score >= 45:
+        return "🟡 Medium"
+    return "⚪ Blank / Low"
+
+
+def render_mapping_table(mapping, confidence):
+    rows = []
+    for standard_col in STANDARD_COLUMNS:
+        mapped_from = mapping.get(standard_col, "")
+        rows.append({
+            "App Column": standard_col,
+            "Auto detected from": mapped_from if mapped_from else "Not detected / blank",
+            "Confidence": confidence_badge(confidence.get(standard_col, 0))
+        })
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+
+def render_import_cleaner(uploaded_file):
+    """Show upload review, auto-cleaning, simple manual fixes, and confirmation before dashboard loads."""
+    st.markdown('<div class="main-title">Review & Auto-Clean Uploaded File</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="sub-title">The app detects the table, maps messy columns into the standard tracker format, and lets you fix only the fields that look wrong.</div>',
+        unsafe_allow_html=True
+    )
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    try:
+        raw_df, sheet_name, header_row, header_score = read_uploaded_file_smart(uploaded_file)
+    except Exception as e:
+        st.error(f"Could not read this file: {e}")
+        if st.button("Upload another file"):
+            for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "import_stage"]:
+                st.session_state.pop(key, None)
+            st.rerun()
+        st.stop()
+
+    auto_df, auto_mapping, warnings, auto_confidence = standardize_uploaded_dataframe(raw_df)
+
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown("### 1) File Detection")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Detected sheet", str(sheet_name))
+    c2.metric("Header row", header_row)
+    c3.metric("Raw rows", len(raw_df))
+    c4.metric("Cleaned rows", len(auto_df))
+    st.caption("If the preview below looks correct, just click **Use Auto-Cleaned File**. No manual work needed.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown("### 2) Extracted Key Fields")
+    st.caption("The app first extracts emails, websites, investor names, contacts, type, location, and notes from the whole sheet, then maps them into your standard tracker format.")
+    render_mapping_table(auto_mapping, auto_confidence)
+    if warnings:
+        for warning in warnings:
+            st.warning(warning)
+    else:
+        st.success("Auto-clean looks good. Check the preview, then continue.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown("### 3) Auto-Cleaned Preview")
+    st.dataframe(auto_df.head(30), use_container_width=True)
+    b1, b2, b3 = st.columns([1.2, 1, 4])
+    with b1:
+        if st.button("Use Auto-Cleaned File", type="primary"):
+            st.session_state.cleaned_import_df = auto_df
+            st.session_state.uploaded_file_object = uploaded_file
+            st.session_state.uploaded_file_name = uploaded_file.name
+            st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
+            st.session_state.import_stage = "ready"
+            st.rerun()
+    with b2:
+        if st.button("Cancel Upload"):
+            for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "import_stage"]:
+                st.session_state.pop(key, None)
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    with st.expander("Fix mapping manually only if preview looks wrong", expanded=bool(warnings)):
+        st.info("Only change fields that look wrong in the preview. Most files should work automatically after extraction.")
+
+        raw_options = [""] + list(raw_df.columns)
+        manual_mapping = dict(auto_mapping)
+
+        st.markdown("#### Important fields")
+        simple_cols = st.columns(2)
+        helper = {
+            "Investor": "Company / fund / organisation name",
+            "Email 1": "Main recipient email",
+            "Website": "Website, URL, LinkedIn, or source link",
+            "1st PiC": "Main contact person name",
+            "Type": "Investor type, sector, category, industry",
+            "Location": "Country, city, HQ, region",
+            "Investment Thesis": "Notes, focus, thesis, strategy, remarks",
+        }
+        for idx, standard_col in enumerate(IMPORTANT_IMPORT_COLUMNS):
+            default_raw = manual_mapping.get(standard_col, "")
+            default_index = raw_options.index(default_raw) if default_raw in raw_options else 0
+            with simple_cols[idx % 2]:
+                manual_mapping[standard_col] = st.selectbox(
+                    f"{standard_col} — {helper.get(standard_col, '')}",
+                    raw_options,
+                    index=default_index,
+                    key=f"simple_manual_map_{standard_col}"
+                )
+
+        with st.expander("Optional fields"):
+            opt_cols = st.columns(2)
+            for idx, standard_col in enumerate(OPTIONAL_IMPORT_COLUMNS):
+                default_raw = manual_mapping.get(standard_col, "")
+                default_index = raw_options.index(default_raw) if default_raw in raw_options else 0
+                with opt_cols[idx % 2]:
+                    manual_mapping[standard_col] = st.selectbox(
+                        f"{standard_col}",
+                        raw_options,
+                        index=default_index,
+                        key=f"optional_manual_map_{standard_col}"
+                    )
+
+        preview_df, _, manual_warnings, _ = standardize_uploaded_dataframe(raw_df, manual_mapping=manual_mapping)
+        st.markdown("#### Preview after your fixes")
+        st.dataframe(preview_df.head(30), use_container_width=True)
+        if manual_warnings:
+            for warning in manual_warnings:
+                st.warning(warning)
+
+        if st.button("Use This Fixed Mapping", type="primary"):
+            st.session_state.cleaned_import_df = preview_df
+            st.session_state.uploaded_file_object = uploaded_file
+            st.session_state.uploaded_file_name = uploaded_file.name
+            st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
+            st.session_state.import_stage = "ready"
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.stop()
+
+
 # =========================
-# FILE UPLOAD FIRST
+# FILE UPLOAD FIRST + SMART IMPORT CLEANER
 # =========================
 existing_file = st.session_state.get("uploaded_file_object", None)
+existing_cleaned_df = st.session_state.get("cleaned_import_df", None)
+raw_import_file = st.session_state.get("raw_uploaded_file", None)
 
-load_css(has_file=existing_file is not None)
+load_css(has_file=(existing_file is not None or existing_cleaned_df is not None or raw_import_file is not None))
 render_neon_mouse_effects()
 
-if existing_file is None:
+# If a new raw file was uploaded, clean/map it before allowing the dashboard to load.
+if st.session_state.get("import_stage") == "mapping" and raw_import_file is not None:
+    render_import_cleaner(raw_import_file)
+
+if existing_cleaned_df is None and existing_file is None:
     st.markdown("""
     <div class="landing-wrap">
         <div class="landing-card">
             <div class="landing-title">Investor Outreach Automation Dashboard</div>
             <div class="landing-subtitle">
-                Upload your investor Excel tracker to clean records, score leads, generate dashboard visuals, and prepare outreach.
+                Upload any investor tracker. The app will auto-detect messy headers, standardize the columns, and show a preview before loading the dashboard.
             </div>
     """, unsafe_allow_html=True)
 
     st.markdown('<div class="landing-upload">', unsafe_allow_html=True)
-    first_upload = st.file_uploader("Upload Investor Excel File", type=["xlsx"])
+    first_upload = st.file_uploader("Upload Investor File", type=["xlsx", "xls", "csv"])
     st.markdown('</div></div></div>', unsafe_allow_html=True)
 
     if first_upload is not None:
-        st.session_state.uploaded_file_object = first_upload
+        st.session_state.raw_uploaded_file = first_upload
         st.session_state.uploaded_file_name = first_upload.name
         st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
+        st.session_state.import_stage = "mapping"
         st.rerun()
 
     st.stop()
@@ -1498,7 +2376,7 @@ page_headers = {
     "Cleaned Tracker": ("Cleaned Investor Outreach Tracker", "Full cleaned investor list with generated domains, emails, scores, and priority ratings"),
     "Lead Scoring": ("Lead Scoring", "Scoring breakdown and priority ranking for each investor"),
     "Outreach Prep": ("Outreach Prep", "Investor research links and draft preparation workspace"),
-    "Email Outreach": ("Email Outreach", "SMTP-based outreach preview and sending workspace"),
+    "Email Outreach": ("Email Outreach", "Send emails using Email 1, Email 2, Hunter Email, or Company Email saved from Outreach Prep"),
 }
 page_title, page_subtitle = page_headers.get(page, ("Investor Outreach", "Automation Dashboard"))
 
@@ -1513,13 +2391,16 @@ with left_head:
 
 with right_head:
     st.markdown('<div class="upload-button-wrap">', unsafe_allow_html=True)
-    new_upload = st.file_uploader("Add New File", type=["xlsx"], label_visibility="collapsed", key="add_new_file")
+    new_upload = st.file_uploader("Add New File", type=["xlsx", "xls", "csv"], label_visibility="collapsed", key="add_new_file")
     st.markdown('</div>', unsafe_allow_html=True)
 
 if new_upload is not None:
-    st.session_state.uploaded_file_object = new_upload
+    # Send every new upload through the same smart importer before loading dashboard.
+    st.session_state.raw_uploaded_file = new_upload
     st.session_state.uploaded_file_name = new_upload.name
     st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
+    st.session_state.import_stage = "mapping"
+    st.session_state.pop("cleaned_import_df", None)
     st.rerun()
 
 st.markdown('</div>', unsafe_allow_html=True)
@@ -1528,7 +2409,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 # =========================
 # DATA PROCESSING
 # =========================
-df, original_count, duplicates_removed = prepare_dataframe(st.session_state.uploaded_file_object)
+df, original_count, duplicates_removed = prepare_dataframe_from_df(st.session_state.cleaned_import_df) if "cleaned_import_df" in st.session_state else prepare_dataframe(st.session_state.uploaded_file_object)
 
 total_investors = len(df)
 high_priority = (df["Priority"] == "High").sum()
@@ -1551,8 +2432,7 @@ if "hunter_enrichment_results" in st.session_state:
         "Hunter Company Name",
         "Hunter Company LinkedIn",
         "Hunter Company Source",
-        "Website Email",
-        "Best Company Email"
+        "Company Email"
     ]
 
     for col in hunter_columns:
@@ -1571,7 +2451,7 @@ if "hunter_enrichment_results" in st.session_state:
 if "website_email_results" in st.session_state:
     website_results = st.session_state.website_email_results
 
-    for col in ["Website Email", "Best Company Email"]:
+    for col in ["Company Email"]:
         if col not in df.columns:
             df[col] = ""
         df[col] = df[col].astype("string")
@@ -1584,7 +2464,7 @@ if "website_email_results" in st.session_state:
                 safe_value = "" if pd.isna(col_value) else str(col_value)
                 df.loc[investor_mask, col_name] = safe_value
 
-    df["Best Company Email"] = df.apply(get_best_company_email, axis=1)
+    # Company Email is kept as the actual email found from Outreach Prep.
 
 
 # =========================
@@ -1842,7 +2722,7 @@ elif page == "Outreach Prep":
             st.session_state.website_email_results = {}
 
         st.session_state.website_email_results[str(selected_investor)] = {
-            "Website Email": website_email
+            "Company Email": website_email
         }
 
         st.rerun()
@@ -1859,7 +2739,7 @@ elif page == "Outreach Prep":
     pic2_name = str(selected_row.get("2nd PiC", "")).strip() or "No Input"
     pic2_email = str(selected_row.get("Email 2", "")).strip() or "No Input"
 
-    website_email = str(selected_row.get("Website Email", "")).strip() or "Not Found"
+    company_email = str(selected_row.get("Company Email", "")).strip() or "Not Found"
 
     hunter_company_name = str(selected_row.get("Hunter Company Name", "")).strip() or "Not Found"
     hunter_company_website = str(selected_row.get("Hunter Company Website", "")).strip() or "Not Found"
@@ -1898,7 +2778,7 @@ elif page == "Outreach Prep":
         st.markdown("<br>", unsafe_allow_html=True)
 
         st.write("### Company Inbox")
-        st.write("**Website Email:**", website_email)
+        st.write("**Company Email:**", company_email)
 
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1933,17 +2813,15 @@ elif page == "Outreach Prep":
 
 elif page == "Email Outreach":
     st.markdown('<div class="section-title">Email Outreach Automation</div>', unsafe_allow_html=True)
-    st.warning("Test mode is enabled by default. Emails will be sent to yourself first.")
 
-    email_columns = [col for col in df.columns if "email" in col.lower()]
+    # Only use real outreach email fields.
+    # Removed old generated fields: Generic Email, Contact Email, Best Company Email.
+    allowed_email_columns = ["Email 1", "Email 2", "Hunter Email", "Company Email"]
+    email_columns = [col for col in allowed_email_columns if col in df.columns]
 
     if not email_columns:
-        st.error("No email column found in your Excel file.")
+        st.error("No supported email columns found. Expected: Email 1, Email 2, Hunter Email, or Company Email.")
     else:
-        email_col = st.selectbox("Select recipient email column", email_columns)
-        outreach_df = df[df[email_col].astype(str).str.strip() != ""].copy()
-        st.write(f"Detected **{len(outreach_df)}** rows with emails.")
-
         try:
             smtp_server = st.secrets["SMTP_SERVER"]
             smtp_port = int(st.secrets["SMTP_PORT"])
@@ -1956,6 +2834,86 @@ elif page == "Email Outreach":
             st.error("SMTP secrets not found. Check `.streamlit/secrets.toml`.")
 
         if secrets_loaded:
+            st.markdown("""
+            <style>
+            .placeholder-help-card {
+                background: rgba(15, 23, 42, 0.96);
+                border: 1px solid rgba(96, 165, 250, 0.35);
+                border-radius: 16px;
+                padding: 16px;
+                margin: 10px 0 16px 0;
+                box-shadow: 0 18px 42px rgba(0,0,0,0.30), 0 0 24px rgba(37,99,235,0.14);
+            }
+            .placeholder-help-card h4 {
+                margin: 0 0 10px 0;
+                color: #ffffff;
+                font-size: 17px;
+            }
+            .placeholder-help-card li {
+                color: #dbeafe;
+                margin-bottom: 7px;
+                font-size: 14px;
+            }
+            .template-preview-box {
+                background: rgba(2, 6, 23, 0.72);
+                border: 1px solid rgba(148, 163, 184, 0.20);
+                border-radius: 14px;
+                padding: 16px;
+                white-space: pre-wrap;
+                color: #e5e7eb;
+                font-size: 14px;
+                line-height: 1.55;
+            }
+            .template-tip-box {
+                background: rgba(37, 99, 235, 0.12);
+                border: 1px solid rgba(96, 165, 250, 0.24);
+                border-radius: 14px;
+                padding: 14px;
+                color: #bfdbfe;
+                font-size: 13px;
+                line-height: 1.55;
+                margin-bottom: 14px;
+            }
+            .builder-chip {
+                display: inline-block;
+                background: rgba(37, 99, 235, 0.22);
+                border: 1px solid rgba(96, 165, 250, 0.45);
+                color: #bfdbfe;
+                border-radius: 999px;
+                padding: 7px 12px;
+                font-size: 13px;
+                font-weight: 800;
+                margin: 4px 4px 4px 0;
+            }
+            .builder-note {
+                color: #94a3b8;
+                font-size: 13px;
+                line-height: 1.5;
+                margin-top: 8px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            default_subject_template = "Potential collaboration with {investor}"
+            default_body_template = """{greeting}
+
+I hope you're doing well.
+
+I'm reaching out regarding {investor}. Based on your investment focus around {investment_thesis}, I thought there may be potential alignment with an opportunity we are currently reviewing.
+
+Would you be open to a short introductory discussion?
+
+Best regards,
+{sender_name}
+{sender_company}"""
+
+            if "email_subject_template" not in st.session_state:
+                st.session_state.email_subject_template = default_subject_template
+            if "email_body_template" not in st.session_state:
+                st.session_state.email_body_template = default_body_template
+            if "show_template_help" not in st.session_state:
+                st.session_state.show_template_help = False
+
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
             st.markdown("### Sender Settings")
             st.write(f"**Sender:** {sender_email}")
@@ -1963,65 +2921,378 @@ elif page == "Email Outreach":
             st.write(f"**SMTP Port:** {smtp_port}")
             st.markdown('</div>', unsafe_allow_html=True)
 
-            test_mode = st.checkbox("Test mode: send all emails to myself", value=True)
-            selected_investors = st.multiselect("Select investors to email", outreach_df["Investor"].tolist())
-            selected_email_df = outreach_df[outreach_df["Investor"].isin(selected_investors)].copy()
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.markdown("### Recipient Sources")
+            selected_email_cols = st.multiselect(
+                "Select which email columns to use",
+                email_columns,
+                default=[email_columns[0]] if email_columns else []
+            )
+
+            investor_options = df["Investor"].astype(str).tolist()
+            selected_investors = st.multiselect(
+                "Select investors to email",
+                investor_options,
+                default=investor_options[:1] if investor_options else []
+            )
+            st.caption("Email outreach will use only the selected investor rows and selected recipient source columns.")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # =========================
+            # SIMPLE EMAIL TEMPLATE EDITOR
+            # =========================
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.markdown("### Customizable Email Template")
+
+            st.markdown("""
+            <style>
+            .placeholder-help-card {
+                background: rgba(15, 23, 42, 0.96);
+                border: 1px solid rgba(96, 165, 250, 0.35);
+                border-radius: 16px;
+                padding: 16px;
+                margin: 10px 0 16px 0;
+                box-shadow: 0 18px 42px rgba(0,0,0,0.30), 0 0 24px rgba(37,99,235,0.14);
+            }
+            .placeholder-help-card h4 { margin: 0 0 10px 0; color: #ffffff; font-size: 17px; }
+            .placeholder-help-card li { color: #dbeafe; margin-bottom: 7px; font-size: 14px; }
+            .template-preview-box {
+                background: rgba(2, 6, 23, 0.72);
+                border: 1px solid rgba(148, 163, 184, 0.20);
+                border-radius: 14px;
+                padding: 16px;
+                white-space: pre-wrap;
+                color: #e5e7eb;
+                font-size: 14px;
+                line-height: 1.55;
+            }
+            .template-tip-box {
+                background: rgba(37, 99, 235, 0.12);
+                border: 1px solid rgba(96, 165, 250, 0.24);
+                border-radius: 14px;
+                padding: 14px;
+                color: #bfdbfe;
+                font-size: 13px;
+                line-height: 1.55;
+                margin-bottom: 14px;
+            }
+            .placeholder-grid-label { color: #94a3b8; font-size: 13px; margin-bottom: 8px; }
+            </style>
+            """, unsafe_allow_html=True)
+
+            if "show_template_help" not in st.session_state:
+                st.session_state.show_template_help = False
+
+            btn_col1, btn_col2, btn_col3 = st.columns([1.2, 1.2, 5])
+            with btn_col1:
+                if st.button("How to use template", key="template_help_btn"):
+                    st.session_state.show_template_help = not st.session_state.show_template_help
+            with btn_col2:
+                if st.button("Reset template", key="template_reset_btn"):
+                    st.session_state.email_subject_template = default_subject_template
+                    st.session_state.email_body_template = default_body_template
+                    st.rerun()
+            with btn_col3:
+                st.caption("Use the default template, or click inside the big body box and insert placeholders where your cursor is.")
+
+            if st.session_state.show_template_help:
+                st.markdown("""
+                <div class="placeholder-help-card">
+                    <h4>How to use the email template</h4>
+                    <ul>
+                        <li>Click inside the big <b>Body template</b> box where you want a field to appear.</li>
+                        <li>Click a blue placeholder chip to insert it at your cursor position.</li>
+                        <li>Edit normal wording directly inside the big body box.</li>
+                        <li>Preview the real email before sending.</li>
+                        <li>The greeting uses first name only, e.g. <b>Hi Michael,</b> not the full name.</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
+
+            sender_col1, sender_col2 = st.columns(2)
+            with sender_col1:
+                sender_name = st.text_input("Sender name", value="Thet")
+            with sender_col2:
+                sender_company = st.text_input("Sender company", value="DealFlow")
+
+            subject_template = st.text_input(
+                "Subject template",
+                value=st.session_state.email_subject_template,
+                key="email_subject_template_input"
+            )
+            st.session_state.email_subject_template = subject_template
+
+            st.markdown("#### Placeholder Panel")
+            st.markdown('<div class="placeholder-grid-label">Click inside the body template first, then click a placeholder below. It will insert at your cursor.</div>', unsafe_allow_html=True)
+
+            placeholder_keys = [
+                "greeting", "investor", "investment_thesis", "type", "location", "sender_name", "sender_company",
+            ]
+
+            placeholder_buttons_html = """
+            <div style="display:grid; grid-template-columns: repeat(7, minmax(120px, 1fr)); gap: 12px; margin: 12px 0 16px 0;">
+            """
+            for placeholder in placeholder_keys:
+                placeholder_buttons_html += """
+                <button type="button" class="template-placeholder-btn" data-placeholder="{0}" style="
+                    background: rgba(37, 99, 235, 0.95);
+                    color: #ffffff;
+                    border: 1px solid rgba(96, 165, 250, 0.55);
+                    border-radius: 12px;
+                    padding: 12px 10px;
+                    font-weight: 800;
+                    cursor: pointer;
+                    box-shadow: 0 10px 24px rgba(37,99,235,0.25);
+                ">{0}</button>
+                """.format("{" + placeholder + "}")
+            placeholder_buttons_html += "</div>"
+
+            body_template = st.text_area(
+                "Body template",
+                value=st.session_state.email_body_template,
+                height=260,
+                key="email_body_template_input",
+                help="Click inside this box, then click a placeholder chip above to insert it at your cursor."
+            )
+            st.session_state.email_body_template = body_template
+
+            components.html(
+                placeholder_buttons_html + """
+                <script>
+                (function () {
+                    const parentDoc = window.parent.document;
+
+                    function findBodyTemplateBox() {
+                        const textareas = Array.from(parentDoc.querySelectorAll('textarea'));
+                        return textareas.find(t => {
+                            const label = (t.getAttribute('aria-label') || '').toLowerCase();
+                            return label.includes('body template');
+                        }) || textareas[textareas.length - 1];
+                    }
+
+                    function setNativeValue(element, value) {
+                        const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set;
+                        const prototype = Object.getPrototypeOf(element);
+                        const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+                        if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {
+                            prototypeValueSetter.call(element, value);
+                        } else if (valueSetter) {
+                            valueSetter.call(element, value);
+                        } else {
+                            element.value = value;
+                        }
+                        element.dispatchEvent(new Event('input', { bubbles: true }));
+                        element.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    document.querySelectorAll('.template-placeholder-btn').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const placeholder = this.getAttribute('data-placeholder');
+                            const textarea = findBodyTemplateBox();
+                            if (!textarea) return;
+                            textarea.focus();
+                            const start = textarea.selectionStart ?? textarea.value.length;
+                            const end = textarea.selectionEnd ?? textarea.value.length;
+                            const current = textarea.value || '';
+                            const next = current.slice(0, start) + placeholder + current.slice(end);
+                            setNativeValue(textarea, next);
+                            const cursor = start + placeholder.length;
+                            textarea.setSelectionRange(cursor, cursor);
+                            textarea.focus();
+                        });
+                    });
+                })();
+                </script>
+                """,
+                height=92,
+            )
+
+            st.markdown("""
+            <div class="template-tip-box">
+                <b>Recommended:</b> keep <code>{greeting}</code> at the top, use <code>{investor}</code> for the investor/company name, and use <code>{investment_thesis}</code> for personalization.
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            if selected_email_cols and selected_investors:
+                selected_base_df = df[df["Investor"].astype(str).isin([str(x) for x in selected_investors])].copy()
+
+                outreach_rows = []
+                for _, row in selected_base_df.iterrows():
+                    for email_col in selected_email_cols:
+                        recipient = str(row.get(email_col, "")).strip()
+                        if recipient and recipient.lower() not in ["nan", "none", "not found", "no input"]:
+                            row_dict = row.to_dict()
+                            outreach_rows.append({
+                                "Investor": row.get("Investor", ""),
+                                "Recipient Source": email_col,
+                                "Actual Recipient": recipient,
+                                "_row_data": row_dict
+                            })
+
+                selected_email_df = pd.DataFrame(outreach_rows)
+            else:
+                selected_email_df = pd.DataFrame()
+
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.markdown("### Test Email Section")
+            st.info("Use this section to send one test email to yourself before sending real outreach emails.")
+
+            test_col1, test_col2 = st.columns([2, 1])
+            with test_col1:
+                selected_test_investor = st.selectbox(
+                    "Select investor for test preview",
+                    investor_options,
+                    key="test_email_investor_select"
+                )
+            with test_col2:
+                st.write("**Test recipient:**")
+                st.code(test_email)
+
+            test_row_data = df[df["Investor"].astype(str) == str(selected_test_investor)].iloc[0].to_dict()
+            test_subject = render_email_template(subject_template, test_row_data, sender_name, sender_company)
+            test_body = render_email_template(body_template, test_row_data, sender_name, sender_company)
+
+            st.write("**Test Subject:**")
+            st.code(test_subject)
+            st.write("**Test Body:**")
+            st.markdown(f'<div class="template-preview-box">{test_body}</div>', unsafe_allow_html=True)
+
+            if st.button("Send Test Email To Myself"):
+                try:
+                    send_email_smtp(
+                        smtp_server,
+                        smtp_port,
+                        sender_email,
+                        sender_password,
+                        test_email,
+                        test_subject,
+                        test_body,
+                        ""
+                    )
+                    st.success(f"Test email sent to {test_email}.")
+                except Exception as e:
+                    st.error(f"Test email failed: {e}")
+
+            st.markdown('</div>', unsafe_allow_html=True)
 
             if len(selected_email_df) > 0:
-                st.markdown("### Email Preview")
-                preview_rows = []
+                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                st.markdown("### Real Outreach Preview")
 
-                for _, row in selected_email_df.iterrows():
-                    real_recipient = str(row.get(email_col, "")).strip()
-                    final_recipient = test_email if test_mode else real_recipient
-                    subject = create_email_subject(row)
-                    body = create_email_body(row)
+                preview_rows = []
+                for _, item in selected_email_df.iterrows():
+                    row = item["_row_data"]
+                    real_recipient = str(item["Actual Recipient"]).strip()
+                    subject = render_email_template(subject_template, row, sender_name, sender_company)
+                    body = render_email_template(body_template, row, sender_name, sender_company)
+
                     preview_rows.append({
-                        "Investor": row.get("Investor", ""),
+                        "Investor": item["Investor"],
+                        "Recipient Source": item["Recipient Source"],
                         "Actual Recipient": real_recipient,
-                        "Send To": final_recipient,
                         "Subject": subject,
                         "Body Preview": body[:180] + "..."
                     })
 
-                st.dataframe(pd.DataFrame(preview_rows), use_container_width=True)
-                selected_preview = st.selectbox("Preview full email for", selected_email_df["Investor"].tolist())
-                preview_row = selected_email_df[selected_email_df["Investor"] == selected_preview].iloc[0]
+                preview_df = pd.DataFrame(preview_rows)
+                st.dataframe(preview_df, use_container_width=True)
+
+                preview_options = [
+                    f"{item['Investor']} — {item['Recipient Source']} — {item['Actual Recipient']}"
+                    for _, item in selected_email_df.iterrows()
+                ]
+
+                selected_preview = st.selectbox("Preview full real email for", preview_options)
+                selected_preview_index = preview_options.index(selected_preview)
+                preview_item = selected_email_df.iloc[selected_preview_index]
+                preview_row = preview_item["_row_data"]
+
+                full_subject = render_email_template(subject_template, preview_row, sender_name, sender_company)
+                full_body = render_email_template(body_template, preview_row, sender_name, sender_company)
 
                 st.write("**Subject:**")
-                st.code(create_email_subject(preview_row))
+                st.code(full_subject)
                 st.write("**Body Preview:**")
-                st.code(create_email_body(preview_row))
+                st.markdown(f'<div class="template-preview-box">{full_body}</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                st.markdown("### Email Controls")
+                cc_email = st.text_input(
+                    "CC email(s)",
+                    value="",
+                    placeholder="Optional. Example: manager@company.com, teammate@company.com"
+                )
+                delay_seconds = st.number_input(
+                    "Delay between emails (seconds)",
+                    min_value=0,
+                    max_value=300,
+                    value=5,
+                    step=1
+                )
+                max_send = st.number_input(
+                    "Maximum emails to send now",
+                    min_value=1,
+                    max_value=max(1, len(selected_email_df)),
+                    value=1,
+                    step=1
+                )
+
                 st.divider()
+                confirm_send = st.checkbox("I confirm I want to send these selected emails to the real recipients")
 
-                max_send = st.number_input("Maximum emails to send now", min_value=1, max_value=10, value=1)
-                confirm_send = st.checkbox("I confirm I want to send these selected emails")
-
-                if st.button("Send Selected Emails"):
+                if st.button("Send Selected Real Emails"):
                     if not confirm_send:
                         st.error("Please tick the confirmation checkbox first.")
                     else:
                         sent_count = 0
                         failed = []
                         send_df = selected_email_df.head(max_send)
+                        progress = st.progress(0)
+                        status_text = st.empty()
 
-                        for _, row in send_df.iterrows():
-                            real_recipient = str(row.get(email_col, "")).strip()
-                            recipient = test_email if test_mode else real_recipient
-                            subject = create_email_subject(row)
-                            body = create_email_body(row)
+                        for index, (_, item) in enumerate(send_df.iterrows(), start=1):
+                            row = item["_row_data"]
+                            recipient = str(item["Actual Recipient"]).strip()
+                            subject = render_email_template(subject_template, row, sender_name, sender_company)
+                            body = render_email_template(body_template, row, sender_name, sender_company)
 
                             try:
-                                send_email_smtp(smtp_server, smtp_port, sender_email, sender_password, recipient, subject, body)
+                                status_text.write(f"Sending {index}/{len(send_df)} to {recipient}...")
+                                send_email_smtp(
+                                    smtp_server,
+                                    smtp_port,
+                                    sender_email,
+                                    sender_password,
+                                    recipient,
+                                    subject,
+                                    body,
+                                    cc_email
+                                )
                                 sent_count += 1
                             except Exception as e:
-                                failed.append({"Investor": row.get("Investor", ""), "Recipient": recipient, "Error": str(e)})
+                                failed.append({
+                                    "Investor": item["Investor"],
+                                    "Recipient Source": item["Recipient Source"],
+                                    "Recipient": recipient,
+                                    "Error": str(e)
+                                })
+
+                            progress.progress(index / len(send_df))
+
+                            if index < len(send_df) and delay_seconds > 0:
+                                time.sleep(delay_seconds)
+
+                        status_text.write("Done.")
 
                         if sent_count > 0:
-                            st.success(f"Successfully sent {sent_count} email(s).")
+                            st.success(f"Successfully sent {sent_count} real email(s).")
 
                         if failed:
                             st.error("Some emails failed to send.")
                             st.dataframe(pd.DataFrame(failed), use_container_width=True)
+
+                st.markdown('</div>', unsafe_allow_html=True)
             else:
-                st.info("Select at least one investor to preview and send emails.")
+                st.info("Select at least one investor and at least one valid recipient source to preview and send emails.")
