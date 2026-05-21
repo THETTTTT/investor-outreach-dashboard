@@ -1422,53 +1422,75 @@ COLUMN_ALIASES = {
     "fund": "Investor", "fund name": "Investor", "fund manager": "Investor", "asset manager": "Investor",
     "manager": "Investor", "institution": "Investor", "entity": "Investor", "fof name": "Investor",
     "vc name": "Investor", "gp": "Investor", "general partner firm": "Investor",
+    "longlist name": "Investor", "target name": "Investor", "buyer target": "Investor",
+    "ma target": "Investor", "m a target": "Investor", "acquisition target": "Investor",
+    "portfolio company": "Investor", "business name": "Investor", "client": "Investor",
 
     # Type
     "type": "Type", "investor type": "Type", "fund type": "Type", "category": "Type",
-    "classification": "Type", "sector": "Type", "industry": "Type", "vertical": "Type",
+    "industry": "Type", "sector": "Type", "sub sector": "Type", "business sector": "Type",
+    "business type": "Type", "service line": "Type", "solution": "Type", "solutions": "Type",
+    "product": "Type", "products": "Type", "specialisation": "Type", "specialization": "Type",
+    "classification": "Type", "vertical": "Type", "segment": "Type", "space": "Type",
 
     # Location
     "location": "Location", "country": "Location", "region": "Location", "geography": "Location",
-    "market": "Location", "hq": "Location", "headquarters": "Location", "office location": "Location",
+    "market": "Location", "geo": "Location", "geography focus": "Location", "country region": "Location",
+    "hq": "Location", "headquarters": "Location", "office location": "Location",
     "address": "Location", "city": "Location", "base": "Location", "based in": "Location",
 
     # Website
     "website": "Website", "web site": "Website", "url": "Website", "website url": "Website",
     "company website": "Website", "homepage": "Website", "domain": "Website", "site": "Website",
-    "linkedin": "Website", "linkedin url": "Website", "source url": "Website", "link": "Website",
+    "linkedin": "Website", "linked in": "Website", "linkedin url": "Website", "linkedin link": "Website",
+    "source url": "Website", "source link": "Website", "profile link": "Website",
+    "company link": "Website", "link": "Website", "links": "Website",
 
     # Primary contact
     "name": "1st PiC", "contact": "1st PiC", "contact name": "1st PiC", "person": "1st PiC",
     "pic": "1st PiC", "1st pic": "1st PiC", "primary contact": "1st PiC", "contact person": "1st PiC",
     "representative": "1st PiC", "partner": "1st PiC", "partner name": "1st PiC", "full name": "1st PiC",
+    "contact title": "1st PiC", "key person": "1st PiC", "lead partner": "1st PiC",
+    "managing partner": "1st PiC", "founder": "1st PiC", "ceo": "1st PiC", "owner": "1st PiC",
     "decision maker": "1st PiC", "contact 1": "1st PiC", "pic 1": "1st PiC",
 
     # Primary email
     "email": "Email 1", "email address": "Email 1", "e mail": "Email 1", "mail": "Email 1",
     "contact email": "Email 1", "primary email": "Email 1", "email 1": "Email 1", "1st email": "Email 1",
-    "pic email": "Email 1", "contact email 1": "Email 1",
+    "pic email": "Email 1", "contact email 1": "Email 1", "email of 1st pic": "Email 1",
+    "1st pic email": "Email 1", "first pic email": "Email 1", "work email": "Email 1",
+    "business email": "Email 1", "direct email": "Email 1", "recipient email": "Email 1",
 
     # Secondary contact/email
     "second contact": "2nd PiC", "secondary contact": "2nd PiC", "2nd pic": "2nd PiC",
     "contact 2": "2nd PiC", "second name": "2nd PiC", "secondary name": "2nd PiC", "pic 2": "2nd PiC",
     "secondary email": "Email 2", "second email": "Email 2", "email 2": "Email 2", "2nd email": "Email 2",
-    "contact email 2": "Email 2",
+    "contact email 2": "Email 2", "email of 2nd pic": "Email 2", "2nd pic email": "Email 2",
+    "second pic email": "Email 2", "alternate email": "Email 2", "alternative email": "Email 2",
 
     # Thesis / notes
     "investment thesis": "Investment Thesis", "thesis": "Investment Thesis", "focus": "Investment Thesis",
     "investment focus": "Investment Thesis", "mandate": "Investment Thesis", "strategy": "Investment Thesis",
     "notes": "Investment Thesis", "note": "Investment Thesis", "description": "Investment Thesis",
     "remarks": "Investment Thesis", "comment": "Investment Thesis", "comments": "Investment Thesis",
-    "memo": "Investment Thesis", "criteria": "Investment Thesis",
+    "memo": "Investment Thesis", "criteria": "Investment Thesis", "strategic fit": "Investment Thesis",
+    "fit": "Investment Thesis", "synergy": "Investment Thesis", "potential synergy": "Investment Thesis",
+    "rationale": "Investment Thesis", "investment rationale": "Investment Thesis",
+    "reason": "Investment Thesis", "why relevant": "Investment Thesis", "target rationale": "Investment Thesis",
+    "sector focus": "Investment Thesis", "past investment": "Investment Thesis", "portfolio": "Investment Thesis",
+    "maximum check": "Investment Thesis", "max check": "Investment Thesis", "check size": "Investment Thesis",
+    "ticket size": "Investment Thesis", "investment size": "Investment Thesis", "revenue": "Investment Thesis",
+    "employees": "Investment Thesis", "source": "Investment Thesis",
 
     # Status
     "status": "Status", "outreach status": "Status", "stage": "Status", "progress": "Status",
-    "follow up": "Status", "follow up status": "Status",
+    "follow up": "Status", "follow up status": "Status", "contacted status": "Status",
+    "reply status": "Status", "email status": "Status", "pipeline status": "Status",
 }
 
 HEADER_KEYWORDS = set(COLUMN_ALIASES.keys()) | {
     "email", "organization", "organisation", "company", "fund", "name", "type", "title",
-    "notes", "source", "website", "location", "sector", "partner", "country", "url"
+    "notes", "note", "source", "website", "location", "sector", "industry", "partner", "country", "url", "link", "linkedin", "strategic fit", "investment thesis", "status", "maximum check"
 }
 
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
@@ -1479,6 +1501,33 @@ COMMON_COUNTRIES = {
     "singapore", "japan", "vietnam", "viet nam", "usa", "us", "united states", "uk", "united kingdom",
     "hong kong", "china", "india", "indonesia", "malaysia", "thailand", "philippines", "korea",
     "south korea", "taiwan", "australia", "germany", "france", "netherlands", "switzerland", "canada"
+}
+
+
+BUSINESS_NAME_TERMS = {
+    "ventures", "venture", "capital", "partners", "partner", "fund", "funds", "management",
+    "asset", "assets", "holdings", "holding", "group", "company", "limited", "ltd", "pte",
+    "inc", "corp", "corporation", "llc", "lp", "llp", "gmbh", "plc", "jsc", "co ltd",
+    "equity", "private equity", "investment", "investments", "advisory", "advisors",
+    "finance", "financial", "bank", "systems", "technologies", "technology", "software",
+    "solutions", "services", "consulting", "infrastructure", "logistics", "warehouse",
+    "foods", "seafood", "retail", "industries", "international", "global", "asia"
+}
+
+PERSON_TITLE_TERMS = {
+    "partner", "director", "manager", "analyst", "associate", "principal", "founder",
+    "ceo", "cfo", "cto", "head", "vp", "president", "officer", "chairman"
+}
+
+THESIS_HEADER_TERMS = {
+    "strategic fit", "fit", "synergy", "potential synergy", "investment thesis", "thesis",
+    "investment focus", "focus", "mandate", "strategy", "rationale", "description", "notes",
+    "note", "remarks", "comments", "memo", "criteria", "sector focus", "past investment",
+    "portfolio", "maximum check", "max check", "check size", "ticket size", "investment size"
+}
+
+IGNORE_AS_THESIS_HEADERS = {
+    "no", "no.", "number", "#", "id", "rank"
 }
 
 
@@ -1561,6 +1610,51 @@ def looks_like_person_name(value):
     if any(term in value.lower() for term in business_terms):
         return False
     return all(w[:1].isupper() for w in words if w[:1].isalpha())
+
+
+def business_name_ratio(series):
+    """How much a column looks like company/fund/target names."""
+    vals = [clean_cell_value(v).lower() for v in column_sample(series)]
+    if not vals:
+        return 0
+    hits = 0
+    for v in vals:
+        if EMAIL_RE.search(v) or URL_RE.search(v) or re.fullmatch(r"[0-9,\.\-\s]+", v):
+            continue
+        if any(term in v for term in BUSINESS_NAME_TERMS):
+            hits += 1
+        elif len(v.split()) <= 6 and not looks_like_person_name(v):
+            hits += 0.35
+    return hits / len(vals)
+
+
+def person_name_ratio(series):
+    """How much a column looks like contact person names."""
+    vals = column_sample(series)
+    if not vals:
+        return 0
+    hits = 0
+    for v in vals:
+        clean = clean_cell_value(v)
+        lower = clean.lower()
+        if looks_like_person_name(clean):
+            hits += 1
+        elif any(title in lower for title in PERSON_TITLE_TERMS) and not any(term in lower for term in BUSINESS_NAME_TERMS):
+            hits += 0.3
+    return hits / len(vals)
+
+
+def compact_join_unique(values, max_parts=4):
+    parts = []
+    for value in values:
+        value = clean_cell_value(value)
+        if not value:
+            continue
+        if value.lower() in ["nan", "none", "null"]:
+            continue
+        if value not in parts:
+            parts.append(value)
+    return " | ".join(parts[:max_parts])
 
 
 def choose_first_nonempty_from_columns(row, columns):
@@ -1649,20 +1743,30 @@ def extract_fields_rowwise(df_raw, standardized, mapping_used):
             result.at[idx, "Location"] = choose_first_nonempty_from_columns(raw_row, location_candidates)
 
         # Thesis/notes: combine useful text columns; avoid emails/URLs/serial numbers.
-        if is_blankish(result.at[idx, "Investment Thesis"]):
-            note_parts = []
-            for col in thesis_candidates:
-                val = clean_cell_value(raw_row.get(col, ""))
-                if not val:
-                    continue
-                if EMAIL_RE.fullmatch(val) or URL_RE.fullmatch(val) or re.fullmatch(r"[0-9,\.\-]+", val):
-                    continue
-                if normalize_column_name(val) == normalize_column_name(result.at[idx, "Investor"]):
-                    continue
-                if val not in note_parts:
-                    note_parts.append(val)
-            if note_parts:
-                result.at[idx, "Investment Thesis"] = " | ".join(note_parts[:3])
+        note_parts = []
+        existing_thesis = clean_cell_value(result.at[idx, "Investment Thesis"])
+        if existing_thesis:
+            note_parts.append(existing_thesis)
+
+        for col in thesis_candidates:
+            norm_col = normalize_column_name(col)
+            val = clean_cell_value(raw_row.get(col, ""))
+            if not val:
+                continue
+            if EMAIL_RE.fullmatch(val) or URL_RE.fullmatch(val):
+                continue
+            if normalize_column_name(val) == normalize_column_name(result.at[idx, "Investor"]):
+                continue
+            # Keep standalone numeric values only when the header gives useful context, e.g. Revenue / Employees / Maximum Check.
+            if re.fullmatch(r"[0-9,\.\-]+", val) and not any(x in norm_col for x in ["revenue", "employee", "check", "ticket"]):
+                continue
+            if any(x in norm_col for x in ["revenue", "employee", "maximum check", "max check", "ticket", "check size"]):
+                val = f"{col}: {val}"
+            if val not in note_parts:
+                note_parts.append(val)
+
+        if note_parts:
+            result.at[idx, "Investment Thesis"] = " | ".join(note_parts[:4])
 
     return result
 
@@ -1720,6 +1824,8 @@ def score_column_for_target(raw_col, series, target):
     n_ratio = numeric_ratio(series)
     c_ratio = country_ratio(series)
     avg_words = average_words(series)
+    biz_ratio = business_name_ratio(series)
+    person_ratio = person_name_ratio(series)
     non_empty = len(vals)
     score = 0
 
@@ -1763,11 +1869,17 @@ def score_column_for_target(raw_col, series, target):
         score -= e_ratio * 25 + n_ratio * 25
 
     elif target == "Investor":
-        if tokens & {"organization", "organisation", "company", "firm", "fund", "investor", "entity", "manager", "institution", "gp"}:
+        if tokens & {"organization", "organisation", "company", "firm", "fund", "investor", "entity", "manager", "institution", "gp", "target", "client"}:
             score += 60
-        if norm in ["name", "fund name", "company name", "organisation name", "organization name", "investor name"]:
+        if norm in ["name", "fund name", "company name", "organisation name", "organization name", "investor name", "target name", "business name"]:
             score += 35
-        if tokens & {"contact", "person", "partner", "pic", "email", "title", "role"}:
+        # Plain "Name" can be a company column in target longlists, but a person column in contact lists.
+        if norm == "name":
+            score += biz_ratio * 70
+            score -= person_ratio * 55
+        score += biz_ratio * 45
+        score -= person_ratio * 35
+        if tokens & {"contact", "person", "pic", "email", "title", "role"}:
             score -= 35
         if e_ratio > 0.05 or u_ratio > 0.2 or n_ratio > 0.55:
             score -= 65
@@ -1777,10 +1889,12 @@ def score_column_for_target(raw_col, series, target):
             score -= 10
 
     elif target == "1st PiC":
-        if tokens & {"name", "contact", "person", "partner", "pic", "representative"}:
+        if tokens & {"name", "contact", "person", "partner", "pic", "representative", "founder", "ceo", "owner"}:
             score += 45
-        if tokens & {"organization", "organisation", "company", "firm", "fund", "investor"}:
+        if tokens & {"organization", "organisation", "company", "firm", "fund", "investor", "target"}:
             score -= 45
+        score += person_ratio * 55
+        score -= biz_ratio * 45
         if any(x in norm for x in ["2", "second", "secondary"]):
             score -= 35
         if e_ratio > 0.05 or u_ratio > 0.05 or n_ratio > 0.25:
@@ -1820,8 +1934,10 @@ def score_column_for_target(raw_col, series, target):
             score += 8
 
     elif target == "Investment Thesis":
-        if tokens & {"thesis", "focus", "strategy", "mandate", "notes", "note", "description", "remarks", "comment", "comments", "criteria", "memo"}:
+        if tokens & {"thesis", "focus", "strategy", "mandate", "notes", "note", "description", "remarks", "comment", "comments", "criteria", "memo", "fit", "synergy", "rationale", "portfolio"}:
             score += 55
+        if norm in THESIS_HEADER_TERMS or any(term in norm for term in THESIS_HEADER_TERMS):
+            score += 45
         if "source" in tokens:
             # Source becomes thesis only when it is text notes, not links.
             score += 20 if u_ratio < 0.2 else -35
@@ -1829,6 +1945,8 @@ def score_column_for_target(raw_col, series, target):
             score += 8
         if avg_words >= 5:
             score += 18
+        if any(term in " ".join([str(v).lower() for v in vals[:15]]) for term in ["synergy", "focus", "investment", "sector", "portfolio", "strategic", "enterprise", "technology", "fintech", "ai", "cloud"]):
+            score += 15
         if e_ratio > 0.05 or u_ratio > 0.35 or n_ratio > 0.5:
             score -= 35
 
@@ -1853,15 +1971,15 @@ def guess_standard_column(raw_col):
         return None
     if any(word in normalized for word in ["email", "e mail", "mail"]):
         return "Email 2" if any(word in normalized for word in ["2", "second", "secondary"]) else "Email 1"
-    if any(word in normalized for word in ["website", "url", "domain", "homepage", "linkedin"]):
+    if any(word in normalized for word in ["website", "url", "domain", "homepage", "linkedin", "link"]):
         return "Website"
     if any(word in normalized for word in ["company", "organization", "organisation", "fund", "firm", "investor"]):
         return "Investor"
     if any(word in normalized for word in ["country", "location", "region", "market", "geography", "hq", "headquarter"]):
         return "Location"
-    if any(word in normalized for word in ["thesis", "focus", "strategy", "mandate", "notes", "description", "remarks", "comment"]):
+    if any(word in normalized for word in ["thesis", "focus", "strategy", "mandate", "notes", "note", "description", "remarks", "comment", "strategic fit", "synergy", "rationale", "maximum check", "ticket size"]):
         return "Investment Thesis"
-    if "type" in normalized or "category" in normalized or "classification" in normalized or "sector" in normalized:
+    if "type" in normalized or "category" in normalized or "classification" in normalized or "sector" in normalized or "industry" in normalized or "vertical" in normalized:
         return "Type"
     if any(word in normalized for word in ["contact", "person", "pic", "representative", "partner", "name"]):
         return "2nd PiC" if any(word in normalized for word in ["2", "second", "secondary"]) else "1st PiC"
@@ -1922,8 +2040,30 @@ def make_unique_columns(columns):
     return result
 
 
-def read_uploaded_file_smart(uploaded_file):
-    """Read CSV/XLS/XLSX and return the best detected table as a dataframe."""
+
+def get_uploaded_sheet_names(uploaded_file):
+    """Return available sheet names for Excel files. CSV has one virtual sheet."""
+    file_name = uploaded_file.name.lower()
+    try:
+        uploaded_file.seek(0)
+    except Exception:
+        pass
+
+    if file_name.endswith(".csv"):
+        return ["CSV"]
+
+    try:
+        xls = pd.ExcelFile(uploaded_file)
+        return xls.sheet_names
+    finally:
+        try:
+            uploaded_file.seek(0)
+        except Exception:
+            pass
+
+
+def read_one_sheet_with_header_detection(uploaded_file, sheet_name=None):
+    """Read one selected CSV/Excel sheet and detect the actual table header row."""
     file_name = uploaded_file.name.lower()
     try:
         uploaded_file.seek(0)
@@ -1943,25 +2083,118 @@ def read_uploaded_file_smart(uploaded_file):
     except Exception:
         pass
 
-    sheets = pd.read_excel(uploaded_file, sheet_name=None, header=None, dtype=str)
-    best = None
-    for sheet_name, raw_no_header in sheets.items():
-        if raw_no_header.empty:
-            continue
-        header_idx, header_score = detect_header_row(raw_no_header)
-        current = (header_score, sheet_name, header_idx, raw_no_header)
-        if best is None or current[0] > best[0]:
-            best = current
+    raw_no_header = pd.read_excel(uploaded_file, sheet_name=sheet_name, header=None, dtype=str)
+    if raw_no_header.empty:
+        raise ValueError(f"Selected sheet '{sheet_name}' is empty.")
 
-    if best is None:
-        raise ValueError("No readable sheet found in the uploaded file.")
-
-    header_score, sheet_name, header_idx, raw_no_header = best
+    header_idx, header_score = detect_header_row(raw_no_header)
     headers = make_unique_columns(raw_no_header.iloc[header_idx].tolist())
     df = raw_no_header.iloc[header_idx + 1:].copy()
     df.columns = headers
     return df.dropna(how="all"), sheet_name, header_idx + 1, header_score
 
+
+def detect_best_sheet(uploaded_file):
+    """Scan all sheets and return a summary table plus the best sheet name."""
+    file_name = uploaded_file.name.lower()
+    if file_name.endswith(".csv"):
+        df, sheet_name, header_row, header_score = read_one_sheet_with_header_detection(uploaded_file, "CSV")
+        return pd.DataFrame([{
+            "Sheet": "CSV",
+            "Detected Header Row": header_row,
+            "Detection Score": header_score,
+            "Rows After Header": len(df),
+            "Recommended": "✅ Best"
+        }]), "CSV"
+
+    try:
+        uploaded_file.seek(0)
+    except Exception:
+        pass
+
+    sheets = pd.read_excel(uploaded_file, sheet_name=None, header=None, dtype=str)
+    summaries = []
+    best_sheet = None
+    best_score = -1
+
+    for sheet_name, raw_no_header in sheets.items():
+        if raw_no_header.empty:
+            summaries.append({
+                "Sheet": sheet_name,
+                "Detected Header Row": "-",
+                "Detection Score": 0,
+                "Rows After Header": 0,
+                "Recommended": ""
+            })
+            continue
+
+        header_idx, header_score = detect_header_row(raw_no_header)
+        rows_after_header = max(len(raw_no_header) - header_idx - 1, 0)
+        summaries.append({
+            "Sheet": sheet_name,
+            "Detected Header Row": header_idx + 1,
+            "Detection Score": header_score,
+            "Rows After Header": rows_after_header,
+            "Recommended": ""
+        })
+
+        if header_score > best_score:
+            best_score = header_score
+            best_sheet = sheet_name
+
+    summary_df = pd.DataFrame(summaries)
+    if best_sheet is None:
+        raise ValueError("No readable sheet found in the uploaded file.")
+    summary_df.loc[summary_df["Sheet"] == best_sheet, "Recommended"] = "✅ Best"
+
+    try:
+        uploaded_file.seek(0)
+    except Exception:
+        pass
+
+    return summary_df, best_sheet
+
+
+
+def get_auto_min_sheet_score(sheet_summary):
+    """Return a fixed automatic threshold for Clean All Usable Sheets.
+
+    This prevents users from accidentally changing the threshold and breaking imports.
+    The threshold adapts to the workbook's best detected score, but never becomes too strict.
+    """
+    try:
+        scores = pd.to_numeric(sheet_summary["Detection Score"], errors="coerce").fillna(0)
+        best_score = float(scores.max()) if len(scores) else 0
+    except Exception:
+        best_score = 0
+
+    if best_score <= 0:
+        return 30
+
+    # Good sourcing sheets usually score far above random notes/summary tabs.
+    # 25% of the best score keeps the threshold contextual while still forgiving.
+    return max(30, min(120, int(best_score * 0.25)))
+
+
+def numbered_for_display(df):
+    """Return a display copy with row numbers starting at 1."""
+    display_df = df.copy().reset_index(drop=True)
+    display_df.index = display_df.index + 1
+    return display_df
+
+
+def read_uploaded_file_smart(uploaded_file, selected_sheet=None):
+    """Read CSV/XLS/XLSX and return the selected or best detected table as a dataframe."""
+    file_name = uploaded_file.name.lower()
+
+    if file_name.endswith(".csv"):
+        return read_one_sheet_with_header_detection(uploaded_file, "CSV")
+
+    if selected_sheet:
+        return read_one_sheet_with_header_detection(uploaded_file, selected_sheet)
+
+    sheet_summary, best_sheet = detect_best_sheet(uploaded_file)
+    return read_one_sheet_with_header_detection(uploaded_file, best_sheet)
 
 def build_auto_mapping(df_raw):
     """Choose the best raw column for each app column using content-aware scoring."""
@@ -2007,8 +2240,10 @@ def build_auto_mapping(df_raw):
             if email_ratio(df_raw[raw_col]) > 0.05 or url_ratio(df_raw[raw_col]) > 0.15 or numeric_ratio(df_raw[raw_col]) > 0.35:
                 continue
             score = 10
-            if any(x in norm for x in ["org", "company", "firm", "fund", "investor", "manager"]):
+            if any(x in norm for x in ["org", "company", "firm", "fund", "investor", "manager", "target", "name"]):
                 score += 50
+            score += business_name_ratio(df_raw[raw_col]) * 40
+            score -= person_name_ratio(df_raw[raw_col]) * 30
             score += min(len(column_sample(df_raw[raw_col])), 30) / 3
             fallback_candidates.append((score, raw_col))
         if fallback_candidates:
@@ -2047,8 +2282,8 @@ def standardize_uploaded_dataframe(raw_df, manual_mapping=None):
         norm = normalize_column_name(raw_col)
         if raw_col in used_raw_cols:
             continue
-        if any(x in norm for x in ["note", "description", "focus", "strategy", "remark", "comment", "criteria", "memo", "title"]):
-            if email_ratio(df_raw[raw_col]) < 0.05 and url_ratio(df_raw[raw_col]) < 0.3:
+        if any(x in norm for x in ["note", "description", "focus", "strategy", "remark", "comment", "criteria", "memo", "title", "strategic fit", "synergy", "rationale", "maximum check", "max check", "ticket", "revenue", "employees"]):
+            if normalize_column_name(raw_col) not in IGNORE_AS_THESIS_HEADERS and email_ratio(df_raw[raw_col]) < 0.05 and url_ratio(df_raw[raw_col]) < 0.3:
                 extra_note_cols.append(raw_col)
 
     if extra_note_cols:
@@ -2074,6 +2309,10 @@ def standardize_uploaded_dataframe(raw_df, manual_mapping=None):
     standardized = standardized.dropna(how="all")
     standardized = standardized[standardized.apply(lambda row: any(str(x).strip() for x in row), axis=1)]
     standardized = standardized[~standardized["Investor"].apply(is_bad_investor_value)]
+
+    # Keep cleaned rows numbered cleanly from 1 instead of showing original Excel row numbers.
+    standardized = standardized.reset_index(drop=True)
+    standardized.index = standardized.index + 1
 
     warnings = []
     if standardized["Investor"].astype(str).str.strip().eq("").all():
@@ -2144,6 +2383,10 @@ def prepare_dataframe_from_df(df_original):
         df["Status"] = "Not Contacted"
     df["Status"] = df["Status"].fillna("Not Contacted").replace("", "Not Contacted")
 
+    # Keep dashboard tables numbered cleanly from 1.
+    df = df.reset_index(drop=True)
+    df.index = df.index + 1
+
     return df, original_count, duplicates_removed
 
 
@@ -2174,124 +2417,367 @@ def render_mapping_table(mapping, confidence):
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
 
+
+def clean_single_sheet_for_import(uploaded_file, selected_sheet):
+    """Read and clean one sheet into the standard app dataframe."""
+    raw_df, sheet_name, header_row, header_score = read_uploaded_file_smart(uploaded_file, selected_sheet=selected_sheet)
+    cleaned_df, mapping, warnings, confidence = standardize_uploaded_dataframe(raw_df)
+    cleaned_df = cleaned_df.copy()
+    cleaned_df["Source Sheet"] = str(sheet_name)
+    return {
+        "cleaned_df": cleaned_df,
+        "raw_df": raw_df,
+        "sheet_name": sheet_name,
+        "header_row": header_row,
+        "header_score": header_score,
+        "mapping": mapping,
+        "warnings": warnings,
+        "confidence": confidence,
+    }
+
+
+def clean_all_usable_sheets_for_import(uploaded_file, min_score=30, min_rows=1):
+    """Clean every detected usable sheet separately. No merging is done here."""
+    sheet_summary, recommended_sheet = detect_best_sheet(uploaded_file)
+    cleaned_sheets = {}
+    import_results = []
+
+    for _, item in sheet_summary.iterrows():
+        sheet_name = str(item["Sheet"])
+        score_value = item.get("Detection Score", 0)
+        rows_value = item.get("Rows After Header", 0)
+
+        try:
+            score_value = float(score_value)
+        except Exception:
+            score_value = 0
+        try:
+            rows_value = int(rows_value)
+        except Exception:
+            rows_value = 0
+
+        if score_value < min_score or rows_value < min_rows:
+            import_results.append({
+                "Sheet": sheet_name,
+                "Status": "Skipped",
+                "Reason": f"Low detection score ({score_value}) or no usable rows",
+                "Rows Cleaned": 0,
+            })
+            continue
+
+        try:
+            result = clean_single_sheet_for_import(uploaded_file, sheet_name)
+            cleaned_df = result["cleaned_df"]
+            if len(cleaned_df) == 0:
+                import_results.append({
+                    "Sheet": sheet_name,
+                    "Status": "Skipped",
+                    "Reason": "No valid investor/company rows after cleaning",
+                    "Rows Cleaned": 0,
+                })
+                continue
+
+            cleaned_name = f"{sheet_name}_CLEANED"
+            cleaned_sheets[cleaned_name] = cleaned_df
+            import_results.append({
+                "Sheet": sheet_name,
+                "Status": "Cleaned",
+                "Reason": "Usable sheet detected",
+                "Rows Cleaned": len(cleaned_df),
+            })
+        except Exception as e:
+            import_results.append({
+                "Sheet": sheet_name,
+                "Status": "Error",
+                "Reason": str(e),
+                "Rows Cleaned": 0,
+            })
+
+    return cleaned_sheets, pd.DataFrame(import_results), recommended_sheet, sheet_summary
+
+
+def set_active_cleaned_sheet(sheet_name):
+    """Set one stored cleaned sheet as the dataframe powering the dashboard."""
+    cleaned_sheets = st.session_state.get("cleaned_sheets", {})
+    if sheet_name not in cleaned_sheets:
+        st.error("Selected cleaned sheet was not found.")
+        return
+    st.session_state.active_cleaned_sheet = sheet_name
+    st.session_state.cleaned_import_df = cleaned_sheets[sheet_name]
+    st.session_state.import_stage = "ready"
+
+
+def render_cleaned_sheets_manager(uploaded_file=None):
+    """Let user choose a cleaned sheet or manually merge cleaned sheets."""
+    cleaned_sheets = st.session_state.get("cleaned_sheets", {})
+    if not cleaned_sheets:
+        return
+
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown("### Available Cleaned Sheets")
+    st.caption("These sheets are already cleaned separately. Nothing is merged unless you manually choose sheets and click merge.")
+
+    summary_rows = []
+    for name, sheet_df in cleaned_sheets.items():
+        source_sheet = sheet_df.get("Source Sheet", pd.Series([name])).iloc[0] if len(sheet_df) > 0 else name
+        summary_rows.append({
+            "Cleaned Sheet": name,
+            "Source Sheet": source_sheet,
+            "Rows": len(sheet_df),
+        })
+    st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
+
+    sheet_names = list(cleaned_sheets.keys())
+    default_active = st.session_state.get("active_cleaned_sheet", sheet_names[0])
+    default_index = sheet_names.index(default_active) if default_active in sheet_names else 0
+    chosen_sheet = st.selectbox("Choose cleaned sheet to use in dashboard", sheet_names, index=default_index, key="choose_active_cleaned_sheet")
+
+    c1, c2 = st.columns([1.2, 4])
+    with c1:
+        if st.button("Use This Sheet", type="primary"):
+            set_active_cleaned_sheet(chosen_sheet)
+            if uploaded_file is not None:
+                st.session_state.uploaded_file_object = uploaded_file
+                st.session_state.uploaded_file_name = uploaded_file.name
+                st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
+            st.rerun()
+
+    st.markdown("#### Manual Merge")
+    st.caption("Select only the cleaned sheets you want to combine. The merge keeps a Source Sheet column so the origin is clear.")
+    merge_selection = st.multiselect("Cleaned sheets to merge", sheet_names, key="manual_merge_sheet_selection")
+    merge_name = st.text_input("Merged sheet name", value="Merged_CLEANED", key="manual_merge_name")
+
+    if st.button("Merge Selected Cleaned Sheets"):
+        if len(merge_selection) < 2:
+            st.warning("Select at least 2 cleaned sheets to merge.")
+        else:
+            merged_parts = []
+            for selected in merge_selection:
+                part = cleaned_sheets[selected].copy()
+                if "Source Sheet" not in part.columns:
+                    part["Source Sheet"] = selected
+                merged_parts.append(part)
+
+            merged_df = pd.concat(merged_parts, ignore_index=True)
+            # Deduplicate only after cleaning, using common identity fields.
+            dedupe_cols = [col for col in ["Investor", "Website", "Email 1"] if col in merged_df.columns]
+            if dedupe_cols:
+                merged_df = merged_df.sort_values(
+                    by=["Investor"],
+                    key=lambda s: s.astype(str).str.len(),
+                    ascending=False,
+                ).drop_duplicates(subset=dedupe_cols, keep="first")
+
+            safe_merge_name = clean_cell_value(merge_name) or "Merged_CLEANED"
+            st.session_state.cleaned_sheets[safe_merge_name] = merged_df
+            st.success(f"Merged {len(merge_selection)} cleaned sheets into {safe_merge_name} ({len(merged_df)} rows).")
+            st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
 def render_import_cleaner(uploaded_file):
-    """Show upload review, auto-cleaning, simple manual fixes, and confirmation before dashboard loads."""
+    """Show import options: clean selected sheet, clean all usable sheets separately, and manual merge."""
     st.markdown('<div class="main-title">Review & Auto-Clean Uploaded File</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="sub-title">The app detects the table, maps messy columns into the standard tracker format, and lets you fix only the fields that look wrong.</div>',
+        '<div class="sub-title">Choose one sheet to clean, or clean all usable sheets separately. Manual merge is available after cleaning.</div>',
         unsafe_allow_html=True
     )
     st.markdown("<br>", unsafe_allow_html=True)
 
+    render_cleaned_sheets_manager(uploaded_file)
+
     try:
-        raw_df, sheet_name, header_row, header_score = read_uploaded_file_smart(uploaded_file)
+        sheet_summary, recommended_sheet = detect_best_sheet(uploaded_file)
+        sheet_names = sheet_summary["Sheet"].tolist()
     except Exception as e:
         st.error(f"Could not read this file: {e}")
         if st.button("Upload another file"):
-            for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "import_stage"]:
+            for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "cleaned_sheets", "active_cleaned_sheet", "import_stage", "selected_import_sheet"]:
                 st.session_state.pop(key, None)
             st.rerun()
         st.stop()
 
-    auto_df, auto_mapping, warnings, auto_confidence = standardize_uploaded_dataframe(raw_df)
-
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 1) File Detection")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Detected sheet", str(sheet_name))
-    c2.metric("Header row", header_row)
-    c3.metric("Raw rows", len(raw_df))
-    c4.metric("Cleaned rows", len(auto_df))
-    st.caption("If the preview below looks correct, just click **Use Auto-Cleaned File**. No manual work needed.")
+    st.markdown("### Workbook Sheet Detection")
+    st.caption("The app scores each sheet based on whether it looks like a usable sourcing/investor table.")
+    sheet_summary_display = sheet_summary.drop(columns=["Recommended"], errors="ignore")
+    st.dataframe(sheet_summary_display, use_container_width=True, hide_index=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 2) Extracted Key Fields")
-    st.caption("The app first extracts emails, websites, investor names, contacts, type, location, and notes from the whole sheet, then maps them into your standard tracker format.")
-    render_mapping_table(auto_mapping, auto_confidence)
-    if warnings:
-        for warning in warnings:
-            st.warning(warning)
-    else:
-        st.success("Auto-clean looks good. Check the preview, then continue.")
-    st.markdown('</div>', unsafe_allow_html=True)
+    tab_selected, tab_all = st.tabs(["Clean Selected Sheet", "Clean All Usable Sheets Separately"])
 
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 3) Auto-Cleaned Preview")
-    st.dataframe(auto_df.head(30), use_container_width=True)
-    b1, b2, b3 = st.columns([1.2, 1, 4])
-    with b1:
-        if st.button("Use Auto-Cleaned File", type="primary"):
-            st.session_state.cleaned_import_df = auto_df
-            st.session_state.uploaded_file_object = uploaded_file
-            st.session_state.uploaded_file_name = uploaded_file.name
-            st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
-            st.session_state.import_stage = "ready"
-            st.rerun()
-    with b2:
-        if st.button("Cancel Upload"):
-            for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "import_stage"]:
-                st.session_state.pop(key, None)
-            st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    with tab_selected:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.markdown("### 1) Choose Sheet to Clean")
+        st.caption("Use this when you only want one tab from the workbook.")
 
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    with st.expander("Fix mapping manually only if preview looks wrong", expanded=bool(warnings)):
-        st.info("Only change fields that look wrong in the preview. Most files should work automatically after extraction.")
+        if len(sheet_names) > 1:
+            default_index = sheet_names.index(recommended_sheet) if recommended_sheet in sheet_names else 0
+            selected_sheet = st.selectbox(
+                "Sheet to clean",
+                sheet_names,
+                index=default_index,
+                key="selected_import_sheet"
+            )
+        else:
+            selected_sheet = sheet_names[0]
+            st.info(f"Only one sheet detected: {selected_sheet}")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        raw_options = [""] + list(raw_df.columns)
-        manual_mapping = dict(auto_mapping)
+        try:
+            result = clean_single_sheet_for_import(uploaded_file, selected_sheet)
+            raw_df = result["raw_df"]
+            auto_df = result["cleaned_df"]
+            auto_mapping = result["mapping"]
+            warnings = result["warnings"]
+            auto_confidence = result["confidence"]
+            sheet_name = result["sheet_name"]
+            header_row = result["header_row"]
+            header_score = result["header_score"]
+        except Exception as e:
+            st.error(f"Could not clean selected sheet: {e}")
+            st.stop()
 
-        st.markdown("#### Important fields")
-        simple_cols = st.columns(2)
-        helper = {
-            "Investor": "Company / fund / organisation name",
-            "Email 1": "Main recipient email",
-            "Website": "Website, URL, LinkedIn, or source link",
-            "1st PiC": "Main contact person name",
-            "Type": "Investor type, sector, category, industry",
-            "Location": "Country, city, HQ, region",
-            "Investment Thesis": "Notes, focus, thesis, strategy, remarks",
-        }
-        for idx, standard_col in enumerate(IMPORTANT_IMPORT_COLUMNS):
-            default_raw = manual_mapping.get(standard_col, "")
-            default_index = raw_options.index(default_raw) if default_raw in raw_options else 0
-            with simple_cols[idx % 2]:
-                manual_mapping[standard_col] = st.selectbox(
-                    f"{standard_col} — {helper.get(standard_col, '')}",
-                    raw_options,
-                    index=default_index,
-                    key=f"simple_manual_map_{standard_col}"
-                )
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.markdown("### 2) Selected Sheet Detection")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Detected sheet", str(sheet_name))
+        c2.metric("Header row", header_row)
+        c3.metric("Raw rows", len(raw_df))
+        c4.metric("Cleaned rows", len(auto_df))
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        with st.expander("Optional fields"):
-            opt_cols = st.columns(2)
-            for idx, standard_col in enumerate(OPTIONAL_IMPORT_COLUMNS):
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.markdown("### 3) Extracted Key Fields")
+        render_mapping_table(auto_mapping, auto_confidence)
+        if warnings:
+            for warning in warnings:
+                st.warning(warning)
+        else:
+            st.success("Auto-clean looks good. Check the preview, then continue.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.markdown("### 4) Auto-Cleaned Preview")
+        st.dataframe(numbered_for_display(auto_df.head(30)), use_container_width=True)
+        b1, b2, b3 = st.columns([1.3, 1.3, 4])
+        with b1:
+            if st.button("Use Selected Sheet", type="primary"):
+                cleaned_name = f"{sheet_name}_CLEANED"
+                if "cleaned_sheets" not in st.session_state:
+                    st.session_state.cleaned_sheets = {}
+                st.session_state.cleaned_sheets[cleaned_name] = auto_df
+                st.session_state.active_cleaned_sheet = cleaned_name
+                st.session_state.cleaned_import_df = auto_df
+                st.session_state.uploaded_file_object = uploaded_file
+                st.session_state.uploaded_file_name = uploaded_file.name
+                st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
+                st.session_state.import_stage = "ready"
+                st.rerun()
+        with b2:
+            if st.button("Cancel Upload"):
+                for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "cleaned_sheets", "active_cleaned_sheet", "import_stage", "selected_import_sheet"]:
+                    st.session_state.pop(key, None)
+                st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        with st.expander("Fix selected sheet mapping manually only if preview looks wrong", expanded=bool(warnings)):
+            st.info("Only change fields that look wrong in the preview. Most files should work automatically after extraction.")
+
+            raw_options = [""] + list(raw_df.columns)
+            manual_mapping = dict(auto_mapping)
+
+            st.markdown("#### Important fields")
+            simple_cols = st.columns(2)
+            helper = {
+                "Investor": "Company / fund / organisation name",
+                "Email 1": "Main recipient email",
+                "Website": "Website, URL, LinkedIn, or source link",
+                "1st PiC": "Main contact person name",
+                "Type": "Investor type, sector, category, industry",
+                "Location": "Country, city, HQ, region",
+                "Investment Thesis": "Notes, focus, thesis, strategy, remarks",
+            }
+            for idx, standard_col in enumerate(IMPORTANT_IMPORT_COLUMNS):
                 default_raw = manual_mapping.get(standard_col, "")
                 default_index = raw_options.index(default_raw) if default_raw in raw_options else 0
-                with opt_cols[idx % 2]:
+                with simple_cols[idx % 2]:
                     manual_mapping[standard_col] = st.selectbox(
-                        f"{standard_col}",
+                        f"{standard_col} — {helper.get(standard_col, '')}",
                         raw_options,
                         index=default_index,
-                        key=f"optional_manual_map_{standard_col}"
+                        key=f"simple_manual_map_{standard_col}"
                     )
 
-        preview_df, _, manual_warnings, _ = standardize_uploaded_dataframe(raw_df, manual_mapping=manual_mapping)
-        st.markdown("#### Preview after your fixes")
-        st.dataframe(preview_df.head(30), use_container_width=True)
-        if manual_warnings:
-            for warning in manual_warnings:
-                st.warning(warning)
+            with st.expander("Optional fields"):
+                opt_cols = st.columns(2)
+                for idx, standard_col in enumerate(OPTIONAL_IMPORT_COLUMNS):
+                    default_raw = manual_mapping.get(standard_col, "")
+                    default_index = raw_options.index(default_raw) if default_raw in raw_options else 0
+                    with opt_cols[idx % 2]:
+                        manual_mapping[standard_col] = st.selectbox(
+                            f"{standard_col}",
+                            raw_options,
+                            index=default_index,
+                            key=f"optional_manual_map_{standard_col}"
+                        )
 
-        if st.button("Use This Fixed Mapping", type="primary"):
-            st.session_state.cleaned_import_df = preview_df
-            st.session_state.uploaded_file_object = uploaded_file
-            st.session_state.uploaded_file_name = uploaded_file.name
-            st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
-            st.session_state.import_stage = "ready"
-            st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+            preview_df, _, manual_warnings, _ = standardize_uploaded_dataframe(raw_df, manual_mapping=manual_mapping)
+            preview_df["Source Sheet"] = str(sheet_name)
+            st.markdown("#### Preview after your fixes")
+            st.dataframe(preview_df.head(30), use_container_width=True)
+            if manual_warnings:
+                for warning in manual_warnings:
+                    st.warning(warning)
+
+            if st.button("Use This Fixed Mapping", type="primary"):
+                cleaned_name = f"{sheet_name}_CLEANED"
+                if "cleaned_sheets" not in st.session_state:
+                    st.session_state.cleaned_sheets = {}
+                st.session_state.cleaned_sheets[cleaned_name] = preview_df
+                st.session_state.active_cleaned_sheet = cleaned_name
+                st.session_state.cleaned_import_df = preview_df
+                st.session_state.uploaded_file_object = uploaded_file
+                st.session_state.uploaded_file_name = uploaded_file.name
+                st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
+                st.session_state.import_stage = "ready"
+                st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with tab_all:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.markdown("### Clean All Usable Sheets Separately")
+        st.caption("This does not merge anything. Each usable tab becomes its own cleaned sheet.")
+        min_score = get_auto_min_sheet_score(sheet_summary)
+        st.markdown(f"""
+        <div class="glass-card">
+            <b>Auto Sheet Detection Threshold:</b> {min_score}
+            <br>
+            <span style="color:#94a3b8;font-size:13px;">
+            Fixed automatically based on this workbook. Users do not need to adjust this.
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Clean All Usable Sheets", type="primary"):
+            with st.spinner("Cleaning all usable sheets separately..."):
+                cleaned_sheets, import_results, recommended, _ = clean_all_usable_sheets_for_import(uploaded_file, min_score=min_score)
+
+            if cleaned_sheets:
+                existing = st.session_state.get("cleaned_sheets", {})
+                existing.update(cleaned_sheets)
+                st.session_state.cleaned_sheets = existing
+                st.session_state.uploaded_file_object = uploaded_file
+                st.session_state.uploaded_file_name = uploaded_file.name
+                st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
+                st.success(f"Cleaned {len(cleaned_sheets)} usable sheet(s). They are saved separately below.")
+                st.dataframe(import_results, use_container_width=True, hide_index=True)
+                st.rerun()
+            else:
+                st.warning("No usable sheets were cleaned. Try lowering the minimum detection score.")
+                st.dataframe(import_results, use_container_width=True, hide_index=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     st.stop()
 
@@ -2301,16 +2787,17 @@ def render_import_cleaner(uploaded_file):
 # =========================
 existing_file = st.session_state.get("uploaded_file_object", None)
 existing_cleaned_df = st.session_state.get("cleaned_import_df", None)
+existing_cleaned_sheets = st.session_state.get("cleaned_sheets", {})
 raw_import_file = st.session_state.get("raw_uploaded_file", None)
 
-load_css(has_file=(existing_file is not None or existing_cleaned_df is not None or raw_import_file is not None))
+load_css(has_file=(existing_file is not None or existing_cleaned_df is not None or bool(existing_cleaned_sheets) or raw_import_file is not None))
 render_neon_mouse_effects()
 
 # If a new raw file was uploaded, clean/map it before allowing the dashboard to load.
 if st.session_state.get("import_stage") == "mapping" and raw_import_file is not None:
     render_import_cleaner(raw_import_file)
 
-if existing_cleaned_df is None and existing_file is None:
+if existing_cleaned_df is None and not existing_cleaned_sheets and existing_file is None:
     st.markdown("""
     <div class="landing-wrap">
         <div class="landing-card">
@@ -2359,6 +2846,21 @@ with st.sidebar:
     uploaded_time = st.session_state.get("uploaded_time", "-")
     total_count = st.session_state.get("total_investors", "-")
 
+    if st.session_state.get("cleaned_sheets"):
+        cleaned_sheet_names = list(st.session_state.cleaned_sheets.keys())
+        active_sheet = st.session_state.get("active_cleaned_sheet", cleaned_sheet_names[0])
+        active_index = cleaned_sheet_names.index(active_sheet) if active_sheet in cleaned_sheet_names else 0
+        selected_active_sheet = st.selectbox(
+            "Active cleaned sheet",
+            cleaned_sheet_names,
+            index=active_index,
+            key="sidebar_active_cleaned_sheet"
+        )
+        if selected_active_sheet != active_sheet:
+            st.session_state.active_cleaned_sheet = selected_active_sheet
+            st.session_state.cleaned_import_df = st.session_state.cleaned_sheets[selected_active_sheet]
+            st.rerun()
+
     st.markdown(f"""
     <div class="sidebar-summary-item">Last Uploaded<div class="sidebar-summary-value">{uploaded_time}</div></div>
     <div class="sidebar-summary-item">Total Investors<div class="sidebar-summary-value">{total_count}</div></div>
@@ -2401,6 +2903,8 @@ if new_upload is not None:
     st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
     st.session_state.import_stage = "mapping"
     st.session_state.pop("cleaned_import_df", None)
+    st.session_state.pop("cleaned_sheets", None)
+    st.session_state.pop("active_cleaned_sheet", None)
     st.rerun()
 
 st.markdown('</div>', unsafe_allow_html=True)
@@ -2409,7 +2913,15 @@ st.markdown('</div>', unsafe_allow_html=True)
 # =========================
 # DATA PROCESSING
 # =========================
-df, original_count, duplicates_removed = prepare_dataframe_from_df(st.session_state.cleaned_import_df) if "cleaned_import_df" in st.session_state else prepare_dataframe(st.session_state.uploaded_file_object)
+if "cleaned_import_df" in st.session_state:
+    df, original_count, duplicates_removed = prepare_dataframe_from_df(st.session_state.cleaned_import_df)
+elif "cleaned_sheets" in st.session_state and st.session_state.cleaned_sheets:
+    first_cleaned_name = list(st.session_state.cleaned_sheets.keys())[0]
+    st.session_state.active_cleaned_sheet = first_cleaned_name
+    st.session_state.cleaned_import_df = st.session_state.cleaned_sheets[first_cleaned_name]
+    df, original_count, duplicates_removed = prepare_dataframe_from_df(st.session_state.cleaned_import_df)
+else:
+    df, original_count, duplicates_removed = prepare_dataframe(st.session_state.uploaded_file_object)
 
 total_investors = len(df)
 high_priority = (df["Priority"] == "High").sum()
