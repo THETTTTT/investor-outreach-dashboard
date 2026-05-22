@@ -5,7 +5,7 @@ import plotly.express as px
 import requests
 import re
 from bs4 import BeautifulSoup
-from urllib.parse import quote
+from urllib.parse import quote, urljoin, urlparse, unquote
 import smtplib
 import ssl
 from email.message import EmailMessage
@@ -992,6 +992,89 @@ def load_css(has_file=False):
         }}
     }}
 
+
+
+    /* =========================
+       SIDEBAR SPACING IMPROVEMENT
+       Keeps sidebar content high, but adds breathing room in Data Summary.
+    ========================= */
+    [data-testid="stSidebar"] > div:first-child {{
+        padding-top: 0rem !important;
+        margin-top: -0.45rem !important;
+    }}
+
+    [data-testid="stSidebar"] .block-container,
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {{
+        padding-top: 0rem !important;
+        gap: 0.7rem !important;
+    }}
+
+    .sidebar-brand {{
+        padding: 0 0 10px 0 !important;
+        margin-top: -2px !important;
+        margin-bottom: 2px !important;
+    }}
+
+    .sidebar-brand h2 {{
+        font-size: 21px !important;
+        line-height: 1.08 !important;
+        margin-bottom: 2px !important;
+    }}
+
+    .sidebar-brand p {{
+        font-size: 12px !important;
+        margin-top: 6px !important;
+        margin-bottom: 10px !important;
+    }}
+
+    [data-testid="stSidebar"] .stRadio > label {{
+        margin-bottom: 5px !important;
+        font-size: 12px !important;
+    }}
+
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] {{
+        gap: 0.28rem !important;
+    }}
+
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {{
+        padding: 5px 8px !important;
+        margin-bottom: 2px !important;
+        min-height: 34px !important;
+    }}
+
+    [data-testid="stSidebar"] hr {{
+        margin: 12px 0 14px 0 !important;
+    }}
+
+    .sidebar-summary-title {{
+        margin-bottom: 10px !important;
+        font-size: 11px !important;
+        letter-spacing: 0.08em !important;
+    }}
+
+    .sidebar-summary-item {{
+        margin-bottom: 16px !important;
+        font-size: 12px !important;
+        line-height: 1.45 !important;
+    }}
+
+    .sidebar-summary-value {{
+        font-size: 14px !important;
+        margin-top: 6px !important;
+        line-height: 1.4 !important;
+        color: #ffffff !important;
+    }}
+
+    [data-testid="stSidebar"] .stSelectbox label {{
+        font-size: 12px !important;
+        margin-bottom: 6px !important;
+    }}
+
+    [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {{
+        min-height: 46px !important;
+        margin-bottom: 8px !important;
+    }}
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -1165,69 +1248,265 @@ def generate_contact_page(domain):
     return "" if domain == "" else f"https://{domain}/contact"
 
 
-def scrape_company_email_from_website(website):
+def normalize_company_website_url(website):
+    """Turn a messy website/domain cell into a usable homepage URL."""
     if pd.isna(website) or str(website).strip() == "":
         return ""
 
     website = str(website).strip()
+    if website.lower() in ["nan", "none", "null", "n/a", "na", "not found", "no input"]:
+        return ""
+
+    # If the Website column accidentally contains a LinkedIn URL, keep it out of scraping.
+    if "linkedin.com" in website.lower():
+        return ""
 
     if not website.startswith(("http://", "https://")):
         website = "https://" + website
 
-    urls_to_check = [
-        website,
-        website.rstrip("/") + "/contact",
-        website.rstrip("/") + "/contact-us",
-        website.rstrip("/") + "/about",
+    parsed = urlparse(website)
+    if not parsed.netloc:
+        return ""
+
+    return website.rstrip("/")
+
+
+def decode_cfemail(encoded_string):
+    """Decode Cloudflare-protected email strings from /cdn-cgi/l/email-protection."""
+    try:
+        encoded_string = encoded_string.strip().split("#")[-1]
+        key = int(encoded_string[:2], 16)
+        return "".join(chr(int(encoded_string[i:i + 2], 16) ^ key) for i in range(2, len(encoded_string), 2))
+    except Exception:
+        return ""
+
+
+def deobfuscate_email_text(text):
+    """Convert common website obfuscations like name [at] domain [dot] com into normal emails."""
+    if not text:
+        return ""
+
+    text = html.unescape(unquote(str(text)))
+    replacements = [
+        (r"\s*\[\s*at\s*\]\s*", "@"),
+        (r"\s*\(\s*at\s*\)\s*", "@"),
+        (r"\s+at\s+", "@"),
+        (r"\s*\[\s*dot\s*\]\s*", "."),
+        (r"\s*\(\s*dot\s*\)\s*", "."),
+        (r"\s+dot\s+", "."),
+    ]
+    for pattern, replacement in replacements:
+        text = re.sub(pattern, replacement, text, flags=re.I)
+    return text
+
+
+def is_probably_bad_email(email):
+    """Filter false positives from images, placeholders, examples, scripts, and tracking text."""
+    email = str(email).strip().lower()
+    if not email or "@" not in email:
+        return True
+
+    blocked_parts = [
+        ".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".ico", ".css", ".js",
+        "example.com", "email.com", "domain.com", "yourdomain", "your-email", "youremail",
+        "name@", "test@", "no-reply@", "noreply@", "donotreply@", "sentry.io",
+        "wixpress.com", "wordpress.com", "schema.org"
+    ]
+    if any(part in email for part in blocked_parts):
+        return True
+
+    # Avoid emails accidentally glued to long script/CSS strings.
+    if len(email) > 90:
+        return True
+
+    return False
+
+
+def score_company_email(email, base_domain=""):
+    """Higher score = better public company email candidate."""
+    email = str(email).strip().lower()
+    local_part = email.split("@")[0]
+    email_domain = email.split("@")[-1] if "@" in email else ""
+    score = 0
+
+    priority_locals = [
+        "contact", "info", "hello", "team", "enquiry", "enquiries", "inquiry", "inquiries",
+        "support", "admin", "office", "business", "partnership", "partnerships", "investor",
+        "investors", "ir", "sales", "bd", "corporate", "general"
+    ]
+    lower_priority_locals = ["careers", "jobs", "hr", "privacy", "legal", "press", "media", "marketing"]
+
+    for keyword in priority_locals:
+        if local_part == keyword or local_part.startswith(keyword + ".") or local_part.startswith(keyword + "-"):
+            score += 80
+            break
+        elif keyword in local_part:
+            score += 35
+
+    if any(keyword in local_part for keyword in lower_priority_locals):
+        score -= 25
+
+    # Prefer emails on the same company domain where possible.
+    if base_domain and email_domain:
+        base_domain = base_domain.replace("www.", "")
+        if email_domain == base_domain or email_domain.endswith("." + base_domain):
+            score += 70
+        elif base_domain.endswith(email_domain) or email_domain.endswith(base_domain.split(".")[-2] + "." + base_domain.split(".")[-1]):
+            score += 35
+
+    # Generic company inboxes are usually better than personal emails for "Company Email".
+    if re.match(r"^[a-z]+\.[a-z]+$", local_part) or re.match(r"^[a-z][a-z]+$", local_part):
+        score -= 5
+
+    return score
+
+
+def extract_emails_from_html(soup, raw_html):
+    """Extract normal, mailto, Cloudflare, and lightly obfuscated emails from one page."""
+    found_emails = []
+    email_pattern = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+
+    for mailto in soup.select('a[href^="mailto:"]'):
+        email = mailto.get("href", "").replace("mailto:", "").split("?")[0].strip()
+        if email:
+            found_emails.append(email)
+
+    for cf_tag in soup.select("[data-cfemail]"):
+        decoded = decode_cfemail(cf_tag.get("data-cfemail", ""))
+        if decoded:
+            found_emails.append(decoded)
+
+    for href_tag in soup.select('a[href*="/cdn-cgi/l/email-protection"]'):
+        decoded = decode_cfemail(href_tag.get("href", ""))
+        if decoded:
+            found_emails.append(decoded)
+
+    page_text = soup.get_text(" ")
+    searchable_text = " ".join([raw_html or "", page_text or ""])
+    searchable_text = deobfuscate_email_text(searchable_text)
+    found_emails.extend(re.findall(email_pattern, searchable_text))
+
+    cleaned_emails = []
+    for email in found_emails:
+        email = html.unescape(unquote(str(email))).strip().strip(".,;:()[]{}<>\"'").lower()
+        if not is_probably_bad_email(email) and email not in cleaned_emails:
+            cleaned_emails.append(email)
+
+    return cleaned_emails
+
+
+def get_relevant_internal_links(soup, current_url, base_domain):
+    """Find likely contact/about/team pages from the current page only."""
+    relevant_keywords = [
+        "contact", "contact-us", "about", "about-us", "team", "people", "leadership", "management",
+        "office", "location", "locations", "imprint", "legal", "privacy", "company", "who-we-are"
+    ]
+    skip_extensions = (".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".zip", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp")
+    links = []
+
+    for tag in soup.select("a[href]"):
+        href = tag.get("href", "").strip()
+        if not href or href.startswith(("mailto:", "tel:", "javascript:", "#")):
+            continue
+
+        absolute_url = urljoin(current_url, href).split("#")[0].rstrip("/")
+        parsed = urlparse(absolute_url)
+        link_domain = parsed.netloc.lower().replace("www.", "")
+        path = parsed.path.lower()
+
+        if not parsed.scheme.startswith("http"):
+            continue
+        if link_domain != base_domain and not link_domain.endswith("." + base_domain):
+            continue
+        if path.endswith(skip_extensions):
+            continue
+        if any(keyword in path for keyword in relevant_keywords):
+            links.append(absolute_url)
+
+    return links
+
+
+def scrape_company_email_from_website(website, max_pages=24):
+    """
+    Deeper public website email scan.
+    This does NOT use Hunter.io and does NOT check Email 1 / 1st PiC restrictions.
+
+    What it scans:
+    - homepage
+    - common contact/about/team/office pages
+    - relevant internal links discovered from those pages
+    - mailto links, visible text emails, Cloudflare-protected emails, and simple [at]/[dot] obfuscations
+    """
+    homepage = normalize_company_website_url(website)
+    if not homepage:
+        return ""
+
+    parsed_home = urlparse(homepage)
+    base_domain = parsed_home.netloc.lower().replace("www.", "")
+    root = f"{parsed_home.scheme}://{parsed_home.netloc}".rstrip("/")
+
+    common_paths = [
+        "", "contact", "contact-us", "contacts", "about", "about-us", "team", "people",
+        "leadership", "management", "company", "who-we-are", "office", "locations",
+        "imprint", "legal", "privacy", "support"
     ]
 
-    email_pattern = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
-    blocked_extensions = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"]
-    priority_keywords = ["contact", "hello", "info", "team", "admin", "support", "enquiry", "inquiries"]
+    urls_to_visit = []
+    for path in common_paths:
+        url = root if path == "" else f"{root}/{path}"
+        if url not in urls_to_visit:
+            urls_to_visit.append(url)
 
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    })
+
+    visited = set()
     found_emails = []
 
-    for url in urls_to_check:
-        try:
-            response = requests.get(
-                url,
-                timeout=8,
-                headers={"User-Agent": "Mozilla/5.0"}
-            )
+    while urls_to_visit and len(visited) < max_pages:
+        url = urls_to_visit.pop(0)
+        if url in visited:
+            continue
+        visited.add(url)
 
+        try:
+            response = session.get(url, timeout=10, allow_redirects=True)
             if response.status_code >= 400:
                 continue
 
+            content_type = response.headers.get("Content-Type", "").lower()
+            if "text/html" not in content_type and "application/xhtml" not in content_type and content_type != "":
+                continue
+
             soup = BeautifulSoup(response.text, "html.parser")
+            found_emails.extend(extract_emails_from_html(soup, response.text))
 
-            for mailto in soup.select('a[href^="mailto:"]'):
-                email = mailto.get("href", "").replace("mailto:", "").split("?")[0].strip()
-                if email:
-                    found_emails.append(email)
-
-            page_text = soup.get_text(" ")
-            found_emails.extend(re.findall(email_pattern, page_text))
+            for link in get_relevant_internal_links(soup, response.url, base_domain):
+                if link not in visited and link not in urls_to_visit and len(urls_to_visit) < max_pages * 2:
+                    urls_to_visit.append(link)
 
         except Exception:
             continue
 
     cleaned_emails = []
-
     for email in found_emails:
-        email = email.strip().strip(".").strip(",").strip(";").lower()
-
-        if any(ext in email for ext in blocked_extensions):
-            continue
-
+        email = str(email).strip().lower()
         if email not in cleaned_emails:
             cleaned_emails.append(email)
 
-    for email in cleaned_emails:
-        if any(keyword in email for keyword in priority_keywords):
-            return email
+    if not cleaned_emails:
+        return ""
 
-    return cleaned_emails[0] if cleaned_emails else ""
-
+    cleaned_emails = sorted(
+        cleaned_emails,
+        key=lambda candidate: score_company_email(candidate, base_domain),
+        reverse=True
+    )
+    return cleaned_emails[0]
 
 def get_best_company_email(row):
     website_email = str(row.get("Website Email", "")).strip()
