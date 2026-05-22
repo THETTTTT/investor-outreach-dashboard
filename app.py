@@ -11,6 +11,15 @@ import ssl
 from email.message import EmailMessage
 from datetime import datetime
 import time
+import html
+
+
+# =========================
+# PERSISTENT SYSTEM MESSAGES
+# =========================
+if "persistent_neon_message" not in st.session_state:
+    st.session_state.persistent_neon_message = ""
+
 
 
 # =========================
@@ -816,6 +825,173 @@ def load_css(has_file=False):
     }}
 
 
+    /* =========================
+       CLEANED / MERGED SHEET NEON UI
+    ========================= */
+    .neon-ack {{
+        color: #38bdf8;
+        background: rgba(14, 165, 233, 0.10);
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin: 12px 0 18px 0;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+        text-shadow: 0 0 10px rgba(56, 189, 248, 0.85), 0 0 26px rgba(14, 165, 233, 0.45);
+        box-shadow: 0 0 24px rgba(56, 189, 248, 0.16), inset 0 0 18px rgba(56, 189, 248, 0.06);
+        animation: neonAckPulse 2.4s ease-in-out infinite;
+    }}
+
+    @keyframes neonAckPulse {{
+        0%, 100% {{ border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 0 20px rgba(56, 189, 248, 0.14); }}
+        50% {{ border-color: rgba(125, 211, 252, 0.85); box-shadow: 0 0 34px rgba(56, 189, 248, 0.30); }}
+    }}
+
+    .cleaned-sheet-table {{
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        margin-top: 10px;
+    }}
+
+    .cleaned-sheet-table th {{
+        background: rgba(30, 41, 59, 0.95);
+        color: #94a3b8;
+        text-align: left;
+        padding: 12px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }}
+
+    .cleaned-sheet-table td {{
+        background: rgba(15, 23, 42, 0.72);
+        border-top: 1px solid rgba(148, 163, 184, 0.12);
+        padding: 12px;
+        color: #e5e7eb;
+        font-size: 13px;
+    }}
+
+    .merged-sheet-row td {{
+        color: #7dd3fc !important;
+        font-weight: 850;
+        text-shadow: 0 0 10px rgba(56, 189, 248, 0.85), 0 0 24px rgba(14, 165, 233, 0.45);
+        background: linear-gradient(90deg, rgba(14, 165, 233, 0.18), rgba(15, 23, 42, 0.72)) !important;
+    }}
+
+
+
+    /* =========================
+       DATA READINESS TABLE FIX
+       Allows full readiness table to be viewed with horizontal scroll.
+       Does not affect Outreach Prep or Email Outreach logic.
+    ========================= */
+    .data-readiness-table-wrap {{
+        width: 100%;
+        max-width: 100%;
+        max-height: 650px;
+        overflow-x: auto;
+        overflow-y: auto;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 14px;
+        margin-top: 12px;
+    }}
+
+    .data-readiness-table-wrap table {{
+        min-width: 1500px;
+        width: max-content;
+        border-collapse: collapse;
+        color: #e5e7eb;
+        font-size: 13px;
+        table-layout: auto;
+    }}
+
+    .data-readiness-table-wrap th {{
+        background: rgba(30, 41, 59, 0.95);
+        color: #94a3b8;
+        text-align: left;
+        padding: 12px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        white-space: nowrap;
+    }}
+
+    .data-readiness-table-wrap td {{
+        background: rgba(15, 23, 42, 0.72);
+        border-top: 1px solid rgba(148, 163, 184, 0.12);
+        padding: 12px;
+        vertical-align: middle;
+        white-space: nowrap;
+    }}
+
+    .data-readiness-table-wrap td:nth-child(7) {{
+        min-width: 360px;
+        max-width: 520px;
+        white-space: normal;
+        line-height: 1.45;
+    }}
+
+    .data-readiness-table-wrap::-webkit-scrollbar {{
+        width: 10px;
+        height: 10px;
+    }}
+
+
+    /* =========================
+       OUTREACH PREP BUTTON GROUP
+       Cleaner spacing for enrichment buttons.
+    ========================= */
+    .outreach-button-note {{
+        color: #94a3b8;
+        font-size: 12px;
+        line-height: 1.45;
+        margin-top: 8px;
+        margin-bottom: 10px;
+    }}
+
+    div[data-testid="column"] .stButton > button {{
+        width: 100%;
+        min-height: 48px;
+        white-space: normal;
+        line-height: 1.25;
+    }}
+
+
+    /* =========================
+       NEON BLUE SYSTEM MESSAGE
+       Used when no missing PIC/email rows are found.
+    ========================= */
+    .neon-blue-message {{
+        color: #7dd3fc;
+        background: rgba(14, 165, 233, 0.10);
+        border: 1px solid rgba(56, 189, 248, 0.45);
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin: 12px 0 18px 0;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+        text-shadow: 0 0 10px rgba(56, 189, 248, 0.85), 0 0 26px rgba(14, 165, 233, 0.45);
+        box-shadow: 0 0 24px rgba(56, 189, 248, 0.18), inset 0 0 18px rgba(56, 189, 248, 0.07);
+        animation: neonBluePulse 2.4s ease-in-out infinite;
+    }}
+
+    @keyframes neonBluePulse {{
+        0%, 100% {{
+            border-color: rgba(56, 189, 248, 0.45);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.16);
+        }}
+        50% {{
+            border-color: rgba(125, 211, 252, 0.95);
+            box-shadow: 0 0 36px rgba(56, 189, 248, 0.34);
+        }}
+    }}
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -1070,6 +1246,75 @@ def get_best_company_email(row):
     return ""
 
 
+def find_all_company_emails_from_websites(dataframe):
+    """
+    Bulk company email lookup.
+    This is NOT Hunter.io and does NOT use credits.
+    It scans every row that has a usable website / Hunter company website,
+    regardless of whether Email 1 or 1st PiC already exists.
+
+    Hunter remains restricted separately:
+    - Hunter only runs when 1st PiC OR Email 1 is missing.
+    - Company email scan runs across all available company websites.
+    """
+    results = {}
+
+    if dataframe is None or dataframe.empty:
+        return results
+
+    rows_to_process = []
+    seen_investors = set()
+
+    for _, row in dataframe.iterrows():
+        investor_name = str(row.get("Investor", "")).strip()
+
+        # Prefer original Website. If missing, fall back to Hunter Company Website if it already exists.
+        website = str(row.get("Website", "")).strip()
+        hunter_company_website = str(row.get("Hunter Company Website", "")).strip()
+
+        website_to_scan = website or hunter_company_website
+
+        # Skip empty/invalid values only. Do NOT skip just because Email 1 or Company Email already exists.
+        if (
+            investor_name
+            and website_to_scan
+            and website_to_scan.lower() not in ["nan", "none", "null", "n/a", "na", "not found", "no input"]
+            and investor_name not in seen_investors
+        ):
+            rows_to_process.append((investor_name, website_to_scan))
+            seen_investors.add(investor_name)
+
+    if not rows_to_process:
+        st.session_state.persistent_neon_message = """
+        <div class="neon-blue-message">
+            ⚡ No company websites found to scan. Please make sure the Website column has valid URLs.
+        </div>
+        """
+        return results
+
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    total_rows = len(rows_to_process)
+
+    for position, (investor_name, website) in enumerate(rows_to_process, start=1):
+        status_text.caption(f"Scanning company website {position}/{total_rows}: {investor_name}")
+        found_email = scrape_company_email_from_website(website)
+
+        # Store result for every scanned investor so the app can show successful scans and blanks clearly.
+        results[investor_name] = {
+            "Company Email": found_email,
+            "Company Email Source": website if found_email else "No public company email found on website/contact/about pages"
+        }
+
+        progress_bar.progress(position / total_rows)
+        time.sleep(0.10)
+
+    status_text.caption("Bulk company email scan completed.")
+    return results
+
+
+
+
 def hunter_company_find(domain):
     if domain == "":
         return {
@@ -1236,57 +1481,134 @@ def enrich_single_investor_with_hunter(row):
     return hunter_domain_search(domain)
 
 
+def enrich_all_investors_with_hunter(dataframe):
+    """
+    Smart Hunter.io bulk enrichment.
+    Only processes rows where 1st PiC OR Email 1 is blank.
+    This saves Hunter credits and avoids re-enriching complete records.
+    """
+    results = {}
+    domain_cache = {}
+
+    if dataframe is None or dataframe.empty:
+        return results
+
+    rows_to_process = []
+    for _, row in dataframe.iterrows():
+        investor_name = str(row.get("Investor", "")).strip()
+        domain = str(row.get("Domain", "")).strip()
+        first_pic = str(row.get("1st PiC", "")).strip()
+        email_1 = str(row.get("Email 1", "")).strip()
+
+        if investor_name and (not first_pic or not email_1):
+            rows_to_process.append((investor_name, domain, row))
+
+    if not rows_to_process:
+        st.session_state.persistent_neon_message = """
+        <div class="neon-blue-message">
+            ⚡ No missing PIC/email records found — every row already has both 1st PiC and Email 1.
+        </div>
+        """
+        return results
+
+    total_rows = len(rows_to_process)
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+
+    for position, (investor_name, domain, row) in enumerate(rows_to_process, start=1):
+        status_text.caption(f"Finding missing PIC/email {position}/{total_rows}: {investor_name}")
+
+        if domain:
+            if domain not in domain_cache:
+                domain_cache[domain] = hunter_domain_search(domain)
+                time.sleep(0.20)
+            results[investor_name] = domain_cache[domain]
+        else:
+            results[investor_name] = {
+                "Hunter Email": "",
+                "Hunter Name": "",
+                "Hunter Position": "",
+                "Hunter LinkedIn": "",
+                "Hunter Confidence": "",
+                "Hunter Source": "Missing domain",
+                "Hunter Company Website": "",
+                "Hunter Company Name": "",
+                "Hunter Company LinkedIn": "",
+                "Hunter Company Source": "Missing domain"
+            }
+
+        progress_bar.progress(position / total_rows)
+
+    status_text.caption("Hunter.io missing PIC/email enrichment completed.")
+    return results
+
+
+def has_value(value):
+    """Return True when a cell has meaningful text/data."""
+    if pd.isna(value):
+        return False
+    value = str(value).strip()
+    return value != "" and value.lower() not in ["nan", "none", "null", "n/a", "na"]
+
+
 def calculate_score(row):
+    """
+    Outreach Readiness Score.
+    This is intentionally based on data completeness, not investor attractiveness.
+    It answers: "Is this record complete enough for an analyst to use for outreach?"
+
+    Weighting:
+    - Email 1: 30
+    - 1st PiC: 20
+    - Investment Thesis: 20
+    - Website: 15
+    - Type: 10
+    - Location: 5
+    Total: 100
+    """
     score = 0
-    investor_type = str(row.get("Type", "")).lower()
-    location = str(row.get("Location", "")).lower()
-    thesis = str(row.get("Investment Thesis", "")).lower()
-    email = str(row.get("Email 1", "")).strip()
-    website = str(row.get("Website", "")).strip()
 
-    if "vc" in investor_type:
-        score += 25
-    elif "family office" in investor_type:
-        score += 25
-    elif "corporate vc" in investor_type:
-        score += 22
-    elif "accelerator" in investor_type:
-        score += 18
-    elif "fund" in investor_type:
-        score += 18
-    elif "investor" in investor_type:
+    if has_value(row.get("Email 1", "")):
+        score += 30
+    if has_value(row.get("1st PiC", "")):
+        score += 20
+    if has_value(row.get("Investment Thesis", "")):
+        score += 20
+    if has_value(row.get("Website", "")):
         score += 15
-
-    if location in ["singapore", "us", "usa", "japan", "hong kong"]:
-        score += 18
-    elif location in ["vietnam", "indonesia", "malaysia", "thailand", "philippines"]:
-        score += 12
-
-    keywords = [
-        "technology", "deeptech", "deep tech", "quantum", "ai",
-        "software", "enterprise", "cloud", "consumer", "retail",
-        "startup", "digital", "fintech", "sea"
-    ]
-
-    for keyword in keywords:
-        if keyword in thesis:
-            score += 4
-
-    if email != "":
-        score += 12
-
-    if website != "":
-        score += 8
+    if has_value(row.get("Type", "")):
+        score += 10
+    if has_value(row.get("Location", "")):
+        score += 5
 
     return min(score, 100)
 
 
 def assign_priority(score):
-    if score >= 70:
-        return "High"
-    elif score >= 45:
-        return "Medium"
-    return "Low"
+    """Keep the existing column name as Priority for compatibility, but use readiness labels."""
+    if score >= 80:
+        return "Ready"
+    elif score >= 50:
+        return "Partial"
+    return "Needs Research"
+
+
+def get_missing_readiness_fields(row):
+    missing = []
+    checks = [
+        ("Email", "Email 1"),
+        ("Contact", "1st PiC"),
+        ("Thesis", "Investment Thesis"),
+        ("Website", "Website"),
+        ("Type", "Type"),
+        ("Location", "Location"),
+    ]
+
+    for label, col in checks:
+        if not has_value(row.get(col, "")):
+            missing.append(label)
+
+    return "Complete" if not missing else ", ".join(missing)
 
 
 def create_email_subject(row):
@@ -1364,12 +1686,12 @@ def send_email_smtp(smtp_server, smtp_port, sender_email, password, recipient, s
 
 def priority_badge(priority):
     priority_text = str(priority).strip().lower()
-    if priority_text == "high":
-        return '<span class="badge badge-high">High</span>'
-    if priority_text == "medium":
-        return '<span class="badge badge-medium">Medium</span>'
-    if priority_text == "low":
-        return '<span class="badge badge-low">Low</span>'
+    if priority_text in ["ready", "high"]:
+        return '<span class="badge badge-low">Ready</span>' if priority_text == "ready" else '<span class="badge badge-high">High</span>'
+    if priority_text in ["partial", "medium"]:
+        return '<span class="badge badge-medium">Partial</span>' if priority_text == "partial" else '<span class="badge badge-medium">Medium</span>'
+    if priority_text in ["needs research", "low"]:
+        return '<span class="badge badge-high">Needs Research</span>' if priority_text == "needs research" else '<span class="badge badge-low">Low</span>'
     return str(priority)
 
 
@@ -1377,22 +1699,31 @@ def render_priority_table(dataframe):
     display_df = dataframe.copy()
     if "Priority" in display_df.columns:
         display_df["Priority"] = display_df["Priority"].apply(priority_badge)
+        display_df = display_df.rename(columns={"Priority": "Readiness"})
+    if "Score" in display_df.columns:
+        display_df = display_df.rename(columns={"Score": "Readiness Score"})
 
     html = display_df.to_html(index=False, escape=False)
     st.markdown(
         f"""
-        <div style="border:1px solid rgba(148,163,184,0.18); border-radius:14px; overflow:hidden;">
+        <div class="data-readiness-table-wrap">
             {html}
         </div>
-        <style>
-        table {{ width: 100%; border-collapse: collapse; color: #e5e7eb; font-size: 13px; }}
-        th {{ background: rgba(30, 41, 59, 0.95); color: #94a3b8; text-align: left; padding: 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }}
-        td {{ background: rgba(15, 23, 42, 0.72); border-top: 1px solid rgba(148, 163, 184, 0.12); padding: 12px; }}
-        </style>
         """,
         unsafe_allow_html=True
     )
 
+
+
+
+def get_cleaned_tracker_export_df(dataframe):
+    """
+    Cleaned Tracker display/export version.
+    Keeps internal helper fields available in the app, but removes generated research columns
+    that should not appear in the cleaned Excel/CSV output.
+    """
+    hidden_cols = ["Domain", "Possible Contact Page", "LinkedIn Search"]
+    return dataframe.drop(columns=[col for col in hidden_cols if col in dataframe.columns], errors="ignore")
 
 
 def normalize_column_name(col):
@@ -2103,8 +2434,7 @@ def detect_best_sheet(uploaded_file):
             "Sheet": "CSV",
             "Detected Header Row": header_row,
             "Detection Score": header_score,
-            "Rows After Header": len(df),
-            "Recommended": "✅ Best"
+            "Rows After Header": len(df)
         }]), "CSV"
 
     try:
@@ -2123,8 +2453,7 @@ def detect_best_sheet(uploaded_file):
                 "Sheet": sheet_name,
                 "Detected Header Row": "-",
                 "Detection Score": 0,
-                "Rows After Header": 0,
-                "Recommended": ""
+                "Rows After Header": 0
             })
             continue
 
@@ -2134,8 +2463,7 @@ def detect_best_sheet(uploaded_file):
             "Sheet": sheet_name,
             "Detected Header Row": header_idx + 1,
             "Detection Score": header_score,
-            "Rows After Header": rows_after_header,
-            "Recommended": ""
+            "Rows After Header": rows_after_header
         })
 
         if header_score > best_score:
@@ -2145,7 +2473,7 @@ def detect_best_sheet(uploaded_file):
     summary_df = pd.DataFrame(summaries)
     if best_sheet is None:
         raise ValueError("No readable sheet found in the uploaded file.")
-    summary_df.loc[summary_df["Sheet"] == best_sheet, "Recommended"] = "✅ Best"
+    summary_df = summary_df[["Sheet", "Detected Header Row", "Detection Score", "Rows After Header"]]
 
     try:
         uploaded_file.seek(0)
@@ -2153,34 +2481,6 @@ def detect_best_sheet(uploaded_file):
         pass
 
     return summary_df, best_sheet
-
-
-
-def get_auto_min_sheet_score(sheet_summary):
-    """Return a fixed automatic threshold for Clean All Usable Sheets.
-
-    This prevents users from accidentally changing the threshold and breaking imports.
-    The threshold adapts to the workbook's best detected score, but never becomes too strict.
-    """
-    try:
-        scores = pd.to_numeric(sheet_summary["Detection Score"], errors="coerce").fillna(0)
-        best_score = float(scores.max()) if len(scores) else 0
-    except Exception:
-        best_score = 0
-
-    if best_score <= 0:
-        return 30
-
-    # Good sourcing sheets usually score far above random notes/summary tabs.
-    # 25% of the best score keeps the threshold contextual while still forgiving.
-    return max(30, min(120, int(best_score * 0.25)))
-
-
-def numbered_for_display(df):
-    """Return a display copy with row numbers starting at 1."""
-    display_df = df.copy().reset_index(drop=True)
-    display_df.index = display_df.index + 1
-    return display_df
 
 
 def read_uploaded_file_smart(uploaded_file, selected_sheet=None):
@@ -2309,8 +2609,6 @@ def standardize_uploaded_dataframe(raw_df, manual_mapping=None):
     standardized = standardized.dropna(how="all")
     standardized = standardized[standardized.apply(lambda row: any(str(x).strip() for x in row), axis=1)]
     standardized = standardized[~standardized["Investor"].apply(is_bad_investor_value)]
-
-    # Keep cleaned rows numbered cleanly from 1 instead of showing original Excel row numbers.
     standardized = standardized.reset_index(drop=True)
     standardized.index = standardized.index + 1
 
@@ -2351,6 +2649,8 @@ def prepare_dataframe_from_df(df_original):
 
     required_subset = [col for col in ["Investor", "Website", "Email 1"] if col in df.columns]
     df = df.drop_duplicates(subset=required_subset) if required_subset else df.drop_duplicates()
+    df = df.reset_index(drop=True)
+    df.index = df.index + 1
 
     for col in ["Website", "Investor", "Type", "Location", "Investment Thesis", "Email 1", "Email 2", "1st PiC", "2nd PiC"]:
         if col not in df.columns:
@@ -2382,10 +2682,6 @@ def prepare_dataframe_from_df(df_original):
     if "Status" not in df.columns:
         df["Status"] = "Not Contacted"
     df["Status"] = df["Status"].fillna("Not Contacted").replace("", "Not Contacted")
-
-    # Keep dashboard tables numbered cleanly from 1.
-    df = df.reset_index(drop=True)
-    df.index = df.index + 1
 
     return df, original_count, duplicates_removed
 
@@ -2436,9 +2732,19 @@ def clean_single_sheet_for_import(uploaded_file, selected_sheet):
     }
 
 
-def clean_all_usable_sheets_for_import(uploaded_file, min_score=30, min_rows=1):
+def get_auto_sheet_detection_threshold(sheet_summary):
+    """Return a fixed sheet score cutoff for deciding usable workbook sheets.
+    50 is practical for DealFlow sourcing files: flexible enough for smaller
+    shortlists, while still filtering obvious notes/summary tabs.
+    """
+    return 50
+
+
+def clean_all_usable_sheets_for_import(uploaded_file, min_score=None, min_rows=1):
     """Clean every detected usable sheet separately. No merging is done here."""
     sheet_summary, recommended_sheet = detect_best_sheet(uploaded_file)
+    if min_score is None:
+        min_score = get_auto_sheet_detection_threshold(sheet_summary)
     cleaned_sheets = {}
     import_results = []
 
@@ -2525,7 +2831,21 @@ def render_cleaned_sheets_manager(uploaded_file=None):
             "Source Sheet": source_sheet,
             "Rows": len(sheet_df),
         })
-    st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
+    summary_df = pd.DataFrame(summary_rows)
+    last_merged_sheet = st.session_state.get("last_merged_sheet", "")
+    table_html = "<table class='cleaned-sheet-table'><thead><tr><th>Cleaned Sheet</th><th>Source Sheet</th><th>Rows</th></tr></thead><tbody>"
+    for _, row in summary_df.iterrows():
+        sheet_name = str(row.get("Cleaned Sheet", ""))
+        row_class = " class='merged-sheet-row'" if sheet_name == last_merged_sheet else ""
+        table_html += (
+            f"<tr{row_class}>"
+            f"<td>{html.escape(sheet_name)}</td>"
+            f"<td>{html.escape(str(row.get('Source Sheet', '')))}</td>"
+            f"<td>{html.escape(str(row.get('Rows', '')))}</td>"
+            f"</tr>"
+        )
+    table_html += "</tbody></table>"
+    st.markdown(table_html, unsafe_allow_html=True)
 
     sheet_names = list(cleaned_sheets.keys())
     default_active = st.session_state.get("active_cleaned_sheet", sheet_names[0])
@@ -2542,36 +2862,40 @@ def render_cleaned_sheets_manager(uploaded_file=None):
                 st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
             st.rerun()
 
-    st.markdown("#### Manual Merge")
-    st.caption("Select only the cleaned sheets you want to combine. The merge keeps a Source Sheet column so the origin is clear.")
-    merge_selection = st.multiselect("Cleaned sheets to merge", sheet_names, key="manual_merge_sheet_selection")
-    merge_name = st.text_input("Merged sheet name", value="Merged_CLEANED", key="manual_merge_name")
+    last_merge_ack = st.session_state.get("last_merge_ack", "")
+    if last_merge_ack:
+        st.markdown(f"<div class='neon-ack'>{html.escape(last_merge_ack)}</div>", unsafe_allow_html=True)
+    else:
+        st.markdown("#### Manual Merge")
+        st.caption("Select only the cleaned sheets you want to combine. The merge keeps a Source Sheet column so the origin is clear.")
+        merge_selection = st.multiselect("Cleaned sheets to merge", sheet_names, key="manual_merge_sheet_selection")
+        merge_name = st.text_input("Merged sheet name", value="Merged_CLEANED", key="manual_merge_name")
 
-    if st.button("Merge Selected Cleaned Sheets"):
-        if len(merge_selection) < 2:
-            st.warning("Select at least 2 cleaned sheets to merge.")
-        else:
-            merged_parts = []
-            for selected in merge_selection:
-                part = cleaned_sheets[selected].copy()
-                if "Source Sheet" not in part.columns:
-                    part["Source Sheet"] = selected
-                merged_parts.append(part)
+        if st.button("Merge Selected Cleaned Sheets"):
+            if len(merge_selection) < 2:
+                st.warning("Select at least 2 cleaned sheets to merge.")
+            else:
+                merged_parts = []
+                for selected in merge_selection:
+                    part = cleaned_sheets[selected].copy()
+                    if "Source Sheet" not in part.columns:
+                        part["Source Sheet"] = selected
+                    merged_parts.append(part)
 
-            merged_df = pd.concat(merged_parts, ignore_index=True)
-            # Deduplicate only after cleaning, using common identity fields.
-            dedupe_cols = [col for col in ["Investor", "Website", "Email 1"] if col in merged_df.columns]
-            if dedupe_cols:
-                merged_df = merged_df.sort_values(
-                    by=["Investor"],
-                    key=lambda s: s.astype(str).str.len(),
-                    ascending=False,
-                ).drop_duplicates(subset=dedupe_cols, keep="first")
+                merged_df = pd.concat(merged_parts, ignore_index=True)
+                dedupe_cols = [col for col in ["Investor", "Website", "Email 1"] if col in merged_df.columns]
+                if dedupe_cols:
+                    merged_df = merged_df.sort_values(
+                        by=["Investor"],
+                        key=lambda s: s.astype(str).str.len(),
+                        ascending=False,
+                    ).drop_duplicates(subset=dedupe_cols, keep="first")
 
-            safe_merge_name = clean_cell_value(merge_name) or "Merged_CLEANED"
-            st.session_state.cleaned_sheets[safe_merge_name] = merged_df
-            st.success(f"Merged {len(merge_selection)} cleaned sheets into {safe_merge_name} ({len(merged_df)} rows).")
-            st.rerun()
+                safe_merge_name = clean_cell_value(merge_name) or "Merged_CLEANED"
+                st.session_state.cleaned_sheets[safe_merge_name] = merged_df
+                st.session_state.last_merged_sheet = safe_merge_name
+                st.session_state.last_merge_ack = f"✦ Merge complete: {safe_merge_name} is ready with {len(merged_df)} cleaned rows. The merged file is highlighted above. ✦"
+                st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -2585,15 +2909,49 @@ def render_import_cleaner(uploaded_file):
     )
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # If the user has already cleaned sheets, keep the screen simple.
+    # Do not keep showing the workbook detection table because it confuses coworkers after cleaning is done.
+    has_cleaned_sheets = bool(st.session_state.get("cleaned_sheets", {}))
+    show_import_options = st.session_state.get("show_import_options", False)
+
+    if has_cleaned_sheets and not show_import_options:
+        render_cleaned_sheets_manager(uploaded_file)
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.info("Cleaned sheets are ready above. Workbook detection is hidden to keep this page simple.")
+        cleaned_all_done = st.session_state.get("cleaned_all_sheets_done", False)
+        if cleaned_all_done:
+            c1, c2 = st.columns([1.3, 4])
+            with c1:
+                if st.button("Upload Different File"):
+                    for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "cleaned_sheets", "active_cleaned_sheet", "import_stage", "selected_import_sheet", "show_import_options", "cleaned_all_sheets_done", "last_merge_ack", "last_merged_sheet"]:
+                        st.session_state.pop(key, None)
+                    st.rerun()
+        else:
+            c1, c2 = st.columns([1.3, 1.3])
+            with c1:
+                if st.button("Clean More From This Workbook"):
+                    st.session_state.show_import_options = True
+                    st.rerun()
+            with c2:
+                if st.button("Upload Different File"):
+                    for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "cleaned_sheets", "active_cleaned_sheet", "import_stage", "selected_import_sheet", "show_import_options", "cleaned_all_sheets_done", "last_merge_ack", "last_merged_sheet"]:
+                        st.session_state.pop(key, None)
+                    st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.stop()
+
     render_cleaned_sheets_manager(uploaded_file)
 
     try:
         sheet_summary, recommended_sheet = detect_best_sheet(uploaded_file)
+        # Keep the detection table simple. No Recommended column.
+        sheet_summary = sheet_summary[["Sheet", "Detected Header Row", "Detection Score", "Rows After Header"]]
         sheet_names = sheet_summary["Sheet"].tolist()
+        auto_sheet_threshold = get_auto_sheet_detection_threshold(sheet_summary)
     except Exception as e:
         st.error(f"Could not read this file: {e}")
         if st.button("Upload another file"):
-            for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "cleaned_sheets", "active_cleaned_sheet", "import_stage", "selected_import_sheet"]:
+            for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "cleaned_sheets", "active_cleaned_sheet", "import_stage", "selected_import_sheet", "show_import_options", "cleaned_all_sheets_done", "last_merge_ack", "last_merged_sheet"]:
                 st.session_state.pop(key, None)
             st.rerun()
         st.stop()
@@ -2601,8 +2959,7 @@ def render_import_cleaner(uploaded_file):
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.markdown("### Workbook Sheet Detection")
     st.caption("The app scores each sheet based on whether it looks like a usable sourcing/investor table.")
-    sheet_summary_display = sheet_summary.drop(columns=["Recommended"], errors="ignore")
-    st.dataframe(sheet_summary_display, use_container_width=True, hide_index=True)
+    st.dataframe(sheet_summary, use_container_width=True, hide_index=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     tab_selected, tab_all = st.tabs(["Clean Selected Sheet", "Clean All Usable Sheets Separately"])
@@ -2634,7 +2991,6 @@ def render_import_cleaner(uploaded_file):
             auto_confidence = result["confidence"]
             sheet_name = result["sheet_name"]
             header_row = result["header_row"]
-            header_score = result["header_score"]
         except Exception as e:
             st.error(f"Could not clean selected sheet: {e}")
             st.stop()
@@ -2660,8 +3016,10 @@ def render_import_cleaner(uploaded_file):
 
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.markdown("### 4) Auto-Cleaned Preview")
-        st.dataframe(numbered_for_display(auto_df.head(30)), use_container_width=True)
-        b1, b2, b3 = st.columns([1.3, 1.3, 4])
+        st.dataframe(auto_df.head(30), use_container_width=True)
+        # Keep the action buttons close together under the preview table.
+        # The last spacer column takes the remaining width so the two buttons do not sit far apart.
+        b1, b2, b3 = st.columns([1.35, 1.1, 10], gap="small")
         with b1:
             if st.button("Use Selected Sheet", type="primary"):
                 cleaned_name = f"{sheet_name}_CLEANED"
@@ -2674,10 +3032,14 @@ def render_import_cleaner(uploaded_file):
                 st.session_state.uploaded_file_name = uploaded_file.name
                 st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
                 st.session_state.import_stage = "ready"
+                st.session_state.show_import_options = False
+                st.session_state.cleaned_all_sheets_done = False
+                st.session_state.pop("last_merge_ack", None)
+                st.session_state.pop("last_merged_sheet", None)
                 st.rerun()
         with b2:
             if st.button("Cancel Upload"):
-                for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "cleaned_sheets", "active_cleaned_sheet", "import_stage", "selected_import_sheet"]:
+                for key in ["raw_uploaded_file", "uploaded_file_object", "cleaned_import_df", "cleaned_sheets", "active_cleaned_sheet", "import_stage", "selected_import_sheet", "show_import_options", "cleaned_all_sheets_done", "last_merge_ack", "last_merged_sheet"]:
                     st.session_state.pop(key, None)
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -2743,6 +3105,10 @@ def render_import_cleaner(uploaded_file):
                 st.session_state.uploaded_file_name = uploaded_file.name
                 st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
                 st.session_state.import_stage = "ready"
+                st.session_state.show_import_options = False
+                st.session_state.cleaned_all_sheets_done = False
+                st.session_state.pop("last_merge_ack", None)
+                st.session_state.pop("last_merged_sheet", None)
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -2750,37 +3116,42 @@ def render_import_cleaner(uploaded_file):
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.markdown("### Clean All Usable Sheets Separately")
         st.caption("This does not merge anything. Each usable tab becomes its own cleaned sheet.")
-        min_score = get_auto_min_sheet_score(sheet_summary)
-        st.markdown(f"""
-        <div class="glass-card">
-            <b>Auto Sheet Detection Threshold:</b> {min_score}
-            <br>
-            <span style="color:#94a3b8;font-size:13px;">
-            Fixed automatically based on this workbook. Users do not need to adjust this.
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="glass-card" style="margin-top:12px;">
+                <b>Auto Sheet Detection Threshold: {auto_sheet_threshold}</b><br>
+                <span style="color:#94a3b8;font-size:13px;">Fixed at 50 for practical sourcing-sheet detection. Users do not need to adjust this.</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
         if st.button("Clean All Usable Sheets", type="primary"):
             with st.spinner("Cleaning all usable sheets separately..."):
-                cleaned_sheets, import_results, recommended, _ = clean_all_usable_sheets_for_import(uploaded_file, min_score=min_score)
+                cleaned_sheets, import_results, recommended, _ = clean_all_usable_sheets_for_import(uploaded_file, min_score=auto_sheet_threshold)
 
             if cleaned_sheets:
                 existing = st.session_state.get("cleaned_sheets", {})
                 existing.update(cleaned_sheets)
                 st.session_state.cleaned_sheets = existing
+                first_cleaned_name = list(cleaned_sheets.keys())[0]
+                st.session_state.active_cleaned_sheet = first_cleaned_name
+                st.session_state.cleaned_import_df = cleaned_sheets[first_cleaned_name]
                 st.session_state.uploaded_file_object = uploaded_file
                 st.session_state.uploaded_file_name = uploaded_file.name
                 st.session_state.uploaded_time = datetime.now().strftime("%b %d, %Y %I:%M %p")
+                st.session_state.show_import_options = False
+                st.session_state.cleaned_all_sheets_done = True
+                st.session_state.pop("last_merge_ack", None)
+                st.session_state.pop("last_merged_sheet", None)
                 st.success(f"Cleaned {len(cleaned_sheets)} usable sheet(s). They are saved separately below.")
                 st.dataframe(import_results, use_container_width=True, hide_index=True)
                 st.rerun()
             else:
-                st.warning("No usable sheets were cleaned. Try lowering the minimum detection score.")
+                st.warning("No usable sheets were cleaned. This workbook may not contain sourcing sheets above the automatic threshold.")
                 st.dataframe(import_results, use_container_width=True, hide_index=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.stop()
-
 
 # =========================
 # FILE UPLOAD FIRST + SMART IMPORT CLEANER
@@ -2876,7 +3247,7 @@ with st.sidebar:
 page_headers = {
     "Dashboard": ("Dashboard Overview", "Key metrics and insights from your investor database"),
     "Cleaned Tracker": ("Cleaned Investor Outreach Tracker", "Full cleaned investor list with generated domains, emails, scores, and priority ratings"),
-    "Lead Scoring": ("Lead Scoring", "Scoring breakdown and priority ranking for each investor"),
+    "Lead Scoring": ("Data Readiness", "Completeness scoring for outreach-ready investor records"),
     "Outreach Prep": ("Outreach Prep", "Investor research links and draft preparation workspace"),
     "Email Outreach": ("Email Outreach", "Send emails using Email 1, Email 2, Hunter Email, or Company Email saved from Outreach Prep"),
 }
@@ -2924,10 +3295,13 @@ else:
     df, original_count, duplicates_removed = prepare_dataframe(st.session_state.uploaded_file_object)
 
 total_investors = len(df)
-high_priority = (df["Priority"] == "High").sum()
+ready_count = (df["Priority"] == "Ready").sum()
+partial_count = (df["Priority"] == "Partial").sum()
+needs_research_count = (df["Priority"] == "Needs Research").sum()
 locations_count = df["Location"].replace("", pd.NA).dropna().nunique()
 emails_available = (df["Email 1"].astype(str).str.strip() != "").sum()
-avg_score = round(df["Score"].mean(), 1) if len(df) > 0 else 0
+missing_emails = total_investors - emails_available
+contacts_available = (df["1st PiC"].astype(str).str.strip() != "").sum()
 st.session_state.total_investors = total_investors
 
 if "hunter_enrichment_results" in st.session_state:
@@ -2978,6 +3352,28 @@ if "website_email_results" in st.session_state:
 
     # Company Email is kept as the actual email found from Outreach Prep.
 
+if "company_email_results" in st.session_state:
+    company_results = st.session_state.company_email_results
+
+    for col in ["Company Email", "Company Email Source"]:
+        if col not in df.columns:
+            df[col] = ""
+        df[col] = df[col].astype("string")
+
+    for investor_name, result in company_results.items():
+        investor_mask = df["Investor"].astype(str) == str(investor_name)
+
+        # New format: result is a dict with Company Email and source.
+        if isinstance(result, dict):
+            for col_name, col_value in result.items():
+                if col_name in df.columns:
+                    safe_value = "" if pd.isna(col_value) else str(col_value)
+                    df.loc[investor_mask, col_name] = safe_value
+        else:
+            # Backward compatibility with older saved session results where value was just the email string.
+            safe_value = "" if pd.isna(result) else str(result)
+            df.loc[investor_mask, "Company Email"] = safe_value
+
 
 # =========================
 # PAGE NAVIGATION CALLBACKS
@@ -3000,18 +3396,18 @@ if page == "Dashboard":
         kpi_card("Duplicates Removed", duplicates_removed, f"{duplicate_pct}% of total", "🧹", "kpi-icon-green")
 
     with c3:
-        high_pct = round((high_priority / total_investors) * 100, 1) if total_investors else 0
-        kpi_card("High Priority", high_priority, f"{high_pct}% of total", "🔥", "kpi-icon-purple")
+        ready_pct = round((ready_count / total_investors) * 100, 1) if total_investors else 0
+        kpi_card("Outreach Ready", ready_count, f"{ready_pct}% complete records", "✅", "kpi-icon-purple")
 
     with c4:
-        kpi_card("Locations", locations_count, "Countries / Regions", "🌍", "kpi-icon-yellow")
+        kpi_card("Missing Emails", missing_emails, "Need enrichment", "🔎", "kpi-icon-yellow")
 
     with c5:
-        email_pct = round((emails_available / total_investors) * 100, 1) if total_investors else 0
-        kpi_card("Emails Available", emails_available, f"{email_pct}% of total", "📧", "kpi-icon-teal")
+        contact_pct = round((contacts_available / total_investors) * 100, 1) if total_investors else 0
+        kpi_card("Contacts Found", contacts_available, f"{contact_pct}% with PiC", "🤝", "kpi-icon-teal")
 
     with c6:
-        kpi_card("Avg Score", avg_score, "Out of 100", "📈", "kpi-icon-cyan")
+        kpi_card("Locations", locations_count, "Countries / Regions", "🌍", "kpi-icon-cyan")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -3022,7 +3418,7 @@ if page == "Dashboard":
 
     selected_location = f1.selectbox("Location", ["All Locations"] + sorted([x for x in df["Location"].dropna().unique() if x != ""]))
     selected_type = f2.selectbox("Type", ["All Types"] + sorted([x for x in df["Type"].dropna().unique() if x != ""]))
-    selected_priority = f3.selectbox("Priority", ["All Priorities"] + sorted(df["Priority"].dropna().unique()))
+    selected_priority = f3.selectbox("Readiness", ["All Readiness"] + sorted(df["Priority"].dropna().unique()))
     selected_status = f4.selectbox("Status", ["All Statuses"] + sorted(df["Status"].dropna().unique()))
     search_query = f5.text_input("Search Investor", placeholder="Search by investor name...")
 
@@ -3032,7 +3428,7 @@ if page == "Dashboard":
         filtered_df = filtered_df[filtered_df["Location"] == selected_location]
     if selected_type != "All Types":
         filtered_df = filtered_df[filtered_df["Type"] == selected_type]
-    if selected_priority != "All Priorities":
+    if selected_priority != "All Readiness":
         filtered_df = filtered_df[filtered_df["Priority"] == selected_priority]
     if selected_status != "All Statuses":
         filtered_df = filtered_df[filtered_df["Status"] == selected_status]
@@ -3051,19 +3447,22 @@ if page == "Dashboard":
 
     with chart_col1:
         with st.container(border=True):
-            st.markdown('<div class="chart-title">Priority Breakdown</div>', unsafe_allow_html=True)
-            priority_counts = filtered_df["Priority"].value_counts().reset_index()
-            priority_counts.columns = ["Priority", "Count"]
-            fig_priority = px.pie(
-                priority_counts,
-                names="Priority",
-                values="Count",
-                hole=0.55,
-                color="Priority",
-                color_discrete_sequence=px.colors.qualitative.Bold
-            )
-            fig_priority = style_plotly_chart(fig_priority, height=270)
-            st.plotly_chart(fig_priority, use_container_width=True)
+            st.markdown('<div class="chart-title">Data Completeness</div>', unsafe_allow_html=True)
+            completeness_counts = pd.DataFrame({
+                "Field": ["Email", "Contact", "Website", "Thesis", "Type", "Location"],
+                "Complete Records": [
+                    (filtered_df["Email 1"].astype(str).str.strip() != "").sum(),
+                    (filtered_df["1st PiC"].astype(str).str.strip() != "").sum(),
+                    (filtered_df["Website"].astype(str).str.strip() != "").sum(),
+                    (filtered_df["Investment Thesis"].astype(str).str.strip() != "").sum(),
+                    (filtered_df["Type"].astype(str).str.strip() != "").sum(),
+                    (filtered_df["Location"].astype(str).str.strip() != "").sum(),
+                ]
+            })
+            fig_completeness = px.bar(completeness_counts, x="Field", y="Complete Records", text="Complete Records")
+            fig_completeness.update_traces(textposition="outside", marker_color="#60a5fa")
+            fig_completeness = style_plotly_chart(fig_completeness, height=270)
+            st.plotly_chart(fig_completeness, use_container_width=True)
 
     with chart_col2:
         with st.container(border=True):
@@ -3095,7 +3494,7 @@ if page == "Dashboard":
             st.plotly_chart(fig_status, use_container_width=True)
 
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Top Scoring Investors</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Ready for Outreach</div>', unsafe_allow_html=True)
     top_investors = filtered_df.sort_values(by="Score", ascending=False)[["Investor", "Type", "Location", "Score", "Priority", "Status"]].head(5)
     render_priority_table(top_investors)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -3103,80 +3502,72 @@ if page == "Dashboard":
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "Cleaned Tracker":
-    st.dataframe(df, use_container_width=True)
+    cleaned_tracker_df = get_cleaned_tracker_export_df(df)
+
+    st.dataframe(cleaned_tracker_df, use_container_width=True)
+
     st.download_button(
         label="Download Cleaned Investor Tracker",
-        data=df.to_csv(index=False).encode("utf-8"),
+        data=cleaned_tracker_df.to_csv(index=False).encode("utf-8"),
         file_name="cleaned_investor_tracker.csv",
         mime="text/csv"
     )
 
 elif page == "Lead Scoring":
-    st.markdown('<div class="section-title">Investor Scoring Breakdown</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Outreach Readiness Breakdown</div>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="glass-card">
+            <b>How the score works:</b> This page now scores record completeness, not investor attractiveness.<br>
+            Email = 30 pts, 1st PiC = 20 pts, Investment Thesis = 20 pts, Website = 15 pts, Type = 10 pts, Location = 5 pts.
+            <br><br>
+            <b>Readiness labels:</b> Ready = 80–100, Partial = 50–79, Needs Research = below 50.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     scoring_columns = [
         "Investor",
         "Type",
         "Location",
+        "Website",
+        "1st PiC",
+        "Email 1",
         "Investment Thesis",
         "Score",
-        "Priority"
+        "Priority",
+        "Missing Fields"
     ]
 
-    priority_order = {
-        "High": 1,
-        "Medium": 2,
-        "Low": 3
+    readiness_order = {
+        "Ready": 1,
+        "Partial": 2,
+        "Needs Research": 3
     }
 
     scored_df = df.copy()
-    scored_df["Priority Rank"] = scored_df["Priority"].map(priority_order).fillna(4)
+    scored_df["Missing Fields"] = scored_df.apply(get_missing_readiness_fields, axis=1)
+    scored_df["Readiness Rank"] = scored_df["Priority"].map(readiness_order).fillna(4)
     scored_df = scored_df.sort_values(
-        by=["Priority Rank", "Score"],
+        by=["Readiness Rank", "Score"],
         ascending=[True, False]
     )
 
     display_df = scored_df[scoring_columns].copy()
     display_df["Priority"] = display_df["Priority"].apply(priority_badge)
+    display_df = display_df.rename(columns={
+        "Score": "Readiness Score",
+        "Priority": "Readiness"
+    })
 
     html = display_df.to_html(index=False, escape=False)
 
     st.markdown(
         f"""
-        <div style="
-            border:1px solid rgba(148,163,184,0.18);
-            border-radius:14px;
-            overflow:hidden;
-            max-height:650px;
-            overflow-y:auto;
-        ">
+        <div class="data-readiness-table-wrap">
             {html}
         </div>
-        <style>
-        table {{
-            width: 100%;
-            border-collapse: collapse;
-            color: #e5e7eb;
-            font-size: 13px;
-        }}
-        th {{
-            background: rgba(30, 41, 59, 0.95);
-            color: #94a3b8;
-            text-align: left;
-            padding: 12px;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            position: sticky;
-            top: 0;
-            z-index: 2;
-        }}
-        td {{
-            background: rgba(15, 23, 42, 0.72);
-            border-top: 1px solid rgba(148, 163, 184, 0.12);
-            padding: 12px;
-        }}
-        </style>
         """,
         unsafe_allow_html=True
     )
@@ -3191,31 +3582,84 @@ elif page == "Outreach Prep":
 
     selected_row = df[df["Investor"] == selected_investor].iloc[0]
 
-    top1, top2, top3 = st.columns([1, 1, 3])
+    st.markdown(
+        """
+        <div class="outreach-button-note">
+            <b>Hunter.io</b> is used for PIC/contact enrichment. 
+            <b>Company Email Scan</b> is not Hunter.io — it scans public website/contact/about pages.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    top1, top2, top3, top4 = st.columns([1.05, 1.2, 1.2, 2.55])
 
     with top1:
-        enrich_clicked = st.button("Enrich with Hunter.io")
+        enrich_clicked = st.button("Enrich Selected")
 
     with top2:
-        scrape_clicked = st.button("Find Company Email")
+        bulk_enrich_clicked = st.button("Find Missing PICs")
 
     with top3:
-        st.caption(
-            "Hunter.io pulls verified company/contact intelligence. "
-            "Company email lookup scans the actual website for public inboxes."
-        )
+        scrape_clicked = st.button("Find Company Email")
+
+    with top4:
+        bulk_scrape_clicked = st.button("Find All Company Emails")
+
+    # Clear the persistent neon message only when the user starts another action.
+    # This keeps the message visible after reruns instead of flashing for 0.5 seconds.
+    if enrich_clicked or bulk_enrich_clicked or scrape_clicked or bulk_scrape_clicked:
+        st.session_state.persistent_neon_message = ""
 
     # =========================
     # HUNTER ENRICHMENT
     # =========================
     if enrich_clicked:
-        with st.spinner("Searching Hunter.io..."):
+        with st.spinner("Searching Hunter.io for selected investor..."):
             hunter_result = enrich_single_investor_with_hunter(selected_row)
 
         if "hunter_enrichment_results" not in st.session_state:
             st.session_state.hunter_enrichment_results = {}
 
         st.session_state.hunter_enrichment_results[str(selected_investor)] = hunter_result
+        st.rerun()
+
+    if bulk_enrich_clicked:
+        with st.spinner("Using Hunter.io only for rows where 1st PiC OR Email 1 is missing..."):
+            bulk_results = enrich_all_investors_with_hunter(df)
+
+        if "hunter_enrichment_results" not in st.session_state:
+            st.session_state.hunter_enrichment_results = {}
+
+        st.session_state.hunter_enrichment_results.update(bulk_results)
+
+        if bulk_results:
+            st.success(f"Hunter.io missing PIC/email enrichment completed for {len(bulk_results)} investor records.")
+
+        st.rerun()
+
+    # Render persistent neon message after Streamlit reruns.
+    # It stays on screen until another Outreach Prep button is clicked.
+    if st.session_state.get("persistent_neon_message", ""):
+        st.markdown(st.session_state.persistent_neon_message, unsafe_allow_html=True)
+
+    if bulk_scrape_clicked:
+        with st.spinner("Scanning all available company websites for public company emails..."):
+            company_email_results = find_all_company_emails_from_websites(df)
+
+        if "company_email_results" not in st.session_state:
+            st.session_state.company_email_results = {}
+
+        st.session_state.company_email_results.update(company_email_results)
+
+        found_count = 0
+        for result in company_email_results.values():
+            if isinstance(result, dict) and str(result.get("Company Email", "")).strip():
+                found_count += 1
+            elif not isinstance(result, dict) and str(result).strip():
+                found_count += 1
+
+        st.success(f"Company email scan completed. Scanned {len(company_email_results)} companies and found {found_count} company emails.")
         st.rerun()
 
     # =========================
