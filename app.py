@@ -2246,14 +2246,52 @@ def get_first_name(name):
     return name.split()[0]
 
 
-def get_default_sender_profile(sender_email=""):
-    """Default editable DealFlow employee profile used for email signatures.
+def load_sender_accounts():
+    """Load sender accounts from secrets.toml, with legacy single-account fallback."""
+    accounts = {}
 
-    DealFlow website and office address are fixed globally so employees only edit
-    their own sender details.
-    """
+    try:
+        raw_accounts = st.secrets.get("SENDER_ACCOUNTS", {})
+    except Exception:
+        raw_accounts = {}
+
+    if raw_accounts:
+        for key, data in raw_accounts.items():
+            email = str(data.get("email", "")).strip()
+            password = str(data.get("password", "")).strip()
+            if not email or not password:
+                continue
+
+            accounts[str(key)] = {
+                "label": str(data.get("name", "") or email).strip(),
+                "email": email,
+                "password": password,
+                "smtp_server": str(data.get("smtp_server", "")).strip(),
+                "smtp_port": str(data.get("smtp_port", "")).strip(),
+            }
+
+    if not accounts:
+        try:
+            legacy_email = str(st.secrets["SENDER_EMAIL"]).strip()
+            legacy_password = str(st.secrets["SENDER_PASSWORD"]).strip()
+            if legacy_email and legacy_password:
+                accounts["default"] = {
+                    "label": legacy_email,
+                    "email": legacy_email,
+                    "password": legacy_password,
+                    "smtp_server": "",
+                    "smtp_port": "",
+                }
+        except Exception:
+            pass
+
+    return accounts
+
+
+def get_default_sender_profile(sender_name="", sender_email=""):
+    """Default editable DealFlow employee profile used for email signatures."""
     return {
-        "sender_name": "Toan Dinh",
+        "sender_name": sender_name or "Toan Dinh",
         "sender_pronouns": "He/Him",
         "sender_title": "M&A Associate | Partner Assistant",
         "sender_email": sender_email or "toan.dinh@dealflow.sg",
@@ -2264,21 +2302,22 @@ def get_default_sender_profile(sender_email=""):
     }
 
 
-def ensure_sender_profile(sender_email=""):
-    """Create profile settings once, then keep them editable through session state."""
-    if "sender_profile" not in st.session_state:
-        st.session_state.sender_profile = get_default_sender_profile(sender_email)
+def ensure_sender_profile(account_key, account_label="", account_email=""):
+    """Create and return one editable sender profile per authenticated account."""
+    if "sender_profiles" not in st.session_state:
+        st.session_state.sender_profiles = {}
 
-    defaults = get_default_sender_profile(sender_email)
-    for key, value in defaults.items():
-        if key not in st.session_state.sender_profile or st.session_state.sender_profile.get(key) in [None, ""]:
-            st.session_state.sender_profile[key] = value
+    if account_key not in st.session_state.sender_profiles:
+        st.session_state.sender_profiles[account_key] = get_default_sender_profile(
+            sender_name=account_label,
+            sender_email=account_email,
+        )
 
-    # Company branding is fixed, not user-editable.
-    st.session_state.sender_profile["company_website"] = FIXED_DEALFLOW_WEBSITE
-    st.session_state.sender_profile["company_address"] = FIXED_DEALFLOW_ADDRESS
-
-    return st.session_state.sender_profile
+    profile = st.session_state.sender_profiles[account_key]
+    profile["sender_email"] = account_email or profile.get("sender_email", "")
+    profile["company_website"] = FIXED_DEALFLOW_WEBSITE
+    profile["company_address"] = FIXED_DEALFLOW_ADDRESS
+    return profile
 
 
 def get_row_value(row, possible_columns, fallback=""):
@@ -2353,7 +2392,11 @@ def body_text_to_html(body_text):
 
 
 def render_email_template(template, row, sender_name=None, sender_company=None, sender_profile=None):
-    profile = sender_profile or ensure_sender_profile(sender_name if sender_name and "@" in str(sender_name) else "")
+    fallback_email = sender_name if sender_name and "@" in str(sender_name) else ""
+    profile = sender_profile or ensure_sender_profile(
+        account_key=fallback_email or "default",
+        account_email=fallback_email,
+    )
     sender_name = sender_name or profile.get("sender_name", "")
     sender_company = sender_company or profile.get("sender_company", "DealFlow")
 
@@ -4651,7 +4694,37 @@ elif page == "Outreach Prep":
 elif page == "Profile Settings":
     st.markdown('<div class="section-title">DealFlow Profile Settings</div>', unsafe_allow_html=True)
 
-    profile = ensure_sender_profile()
+    sender_accounts = load_sender_accounts()
+    if not sender_accounts:
+        st.error("No sender accounts found in `.streamlit/secrets.toml`. Add a `[SENDER_ACCOUNTS.xxx]` block.")
+        st.stop()
+
+    account_keys = list(sender_accounts.keys())
+    account_labels = [f'{sender_accounts[k]["label"]} <{sender_accounts[k]["email"]}>' for k in account_keys]
+
+    if (
+        "profile_settings_account_key" not in st.session_state
+        or st.session_state.profile_settings_account_key not in account_keys
+    ):
+        st.session_state.profile_settings_account_key = account_keys[0]
+
+    default_index = account_keys.index(st.session_state.profile_settings_account_key)
+    picked_index = st.selectbox(
+        "Which mailbox are you editing the profile for?",
+        range(len(account_keys)),
+        index=default_index,
+        format_func=lambda i: account_labels[i],
+        key="profile_settings_account_selectbox",
+    )
+    active_account_key = account_keys[picked_index]
+    st.session_state.profile_settings_account_key = active_account_key
+    active_account = sender_accounts[active_account_key]
+
+    profile = ensure_sender_profile(
+        account_key=active_account_key,
+        account_label=active_account["label"],
+        account_email=active_account["email"],
+    )
 
     st.markdown("""
     <style>
@@ -4750,13 +4823,42 @@ elif page == "Profile Settings":
 
     col1, col2 = st.columns(2)
     with col1:
-        new_name = st.text_input("Sender Name", value=profile.get("sender_name", ""), key="profile_sender_name")
-        new_title = st.text_input("Job Title", value=profile.get("sender_title", ""), key="profile_sender_title")
-        new_email = st.text_input("Email", value=profile.get("sender_email", ""), key="profile_sender_email")
-        new_company = st.text_input("Company", value=profile.get("sender_company", "DealFlow"), key="profile_sender_company")
+        new_name = st.text_input(
+            "Sender Name",
+            value=profile.get("sender_name", ""),
+            key=f"profile_sender_name_{active_account_key}",
+        )
+        new_title = st.text_input(
+            "Job Title",
+            value=profile.get("sender_title", ""),
+            key=f"profile_sender_title_{active_account_key}",
+        )
+        st.text_input(
+            "Email (locked to this mailbox login)",
+            value=active_account["email"],
+            disabled=True,
+            key=f"profile_sender_email_locked_{active_account_key}",
+            help=(
+                "Always matches the mailbox selected above — Office 365 requires "
+                "the From address to match the authenticated account."
+            ),
+        )
+        new_company = st.text_input(
+            "Company",
+            value=profile.get("sender_company", "DealFlow"),
+            key=f"profile_sender_company_{active_account_key}",
+        )
     with col2:
-        new_pronouns = st.text_input("Pronouns", value=profile.get("sender_pronouns", ""), key="profile_sender_pronouns")
-        new_phone = st.text_input("Phone", value=profile.get("sender_phone", ""), key="profile_sender_phone")
+        new_pronouns = st.text_input(
+            "Pronouns",
+            value=profile.get("sender_pronouns", ""),
+            key=f"profile_sender_pronouns_{active_account_key}",
+        )
+        new_phone = st.text_input(
+            "Phone",
+            value=profile.get("sender_phone", ""),
+            key=f"profile_sender_phone_{active_account_key}",
+        )
         st.markdown("""
         <div class="fixed-brand-note">
             <b>Fixed DealFlow branding</b><br>
@@ -4767,28 +4869,35 @@ elif page == "Profile Settings":
 
     save_col, spacer_col, reset_col = st.columns([1.2, 5, 1.4])
     with save_col:
-        if st.button("💾 Save Profile", type="primary"):
-            st.session_state.sender_profile = {
+        if st.button("💾 Save Profile", type="primary", key=f"save_profile_{active_account_key}"):
+            st.session_state.sender_profiles[active_account_key] = {
                 "sender_name": new_name.strip(),
                 "sender_pronouns": new_pronouns.strip(),
                 "sender_title": new_title.strip(),
-                "sender_email": new_email.strip(),
+                "sender_email": active_account["email"],
                 "sender_phone": new_phone.strip(),
                 "sender_company": new_company.strip() or "DealFlow",
                 "company_website": FIXED_DEALFLOW_WEBSITE,
                 "company_address": FIXED_DEALFLOW_ADDRESS,
             }
-            st.success("Profile saved. Email Outreach will now use this signature.")
+            st.success(f"Profile saved for {active_account['label']} <{active_account['email']}>.")
             st.rerun()
     with reset_col:
-        if st.button("↻ Reset To Default"):
-            st.session_state.sender_profile = get_default_sender_profile()
+        if st.button("↻ Reset To Default", key=f"reset_profile_{active_account_key}"):
+            st.session_state.sender_profiles[active_account_key] = get_default_sender_profile(
+                sender_name=active_account["label"],
+                sender_email=active_account["email"],
+            )
             st.success("Profile reset to default.")
             st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    profile = ensure_sender_profile()
+    profile = ensure_sender_profile(
+        account_key=active_account_key,
+        account_label=active_account["label"],
+        account_email=active_account["email"],
+    )
     st.markdown('<div class="signature-preview-outer">', unsafe_allow_html=True)
     st.markdown("### Signature Preview")
     st.markdown('<div class="profile-caption">This is how your email signature will appear.</div>', unsafe_allow_html=True)
@@ -4808,22 +4917,89 @@ elif page == "Email Outreach":
         st.error("No supported email columns found. Expected: Email 1, Email 2, Hunter Email, or Company Email.")
     else:
         try:
-            smtp_server = st.secrets["SMTP_SERVER"]
-            smtp_port = int(st.secrets["SMTP_PORT"])
-            sender_email = st.secrets["SENDER_EMAIL"]
-            sender_password = st.secrets["SENDER_PASSWORD"]
-            test_email = st.secrets["TEST_EMAIL"]
-            secrets_loaded = True
+            global_smtp_server = str(st.secrets.get("SMTP_SERVER", "")).strip()
+            global_smtp_port = int(st.secrets.get("SMTP_PORT", 587))
+            test_email = str(st.secrets.get("TEST_EMAIL", "")).strip()
         except Exception:
-            secrets_loaded = False
-            st.error("SMTP secrets not found. Check `.streamlit/secrets.toml`.")
+            global_smtp_server = ""
+            global_smtp_port = 587
+            test_email = ""
+
+        sender_accounts = load_sender_accounts()
+        secrets_loaded = bool(sender_accounts)
+
+        if not sender_accounts:
+            st.error(
+                "No sender accounts found in `.streamlit/secrets.toml`. "
+                "Add at least one `[SENDER_ACCOUNTS.xxx]` block, or the legacy "
+                "`SENDER_EMAIL` / `SENDER_PASSWORD` keys."
+            )
 
         if secrets_loaded:
-            profile = ensure_sender_profile(sender_email)
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.markdown("### Send From Account")
+            st.caption(
+                "Pick which real mailbox this batch is sent from — "
+                "the app authenticates with that exact account."
+            )
 
-            # Keep SMTP sender aligned with profile email unless the user has explicitly changed it.
-            if not profile.get("sender_email"):
-                profile["sender_email"] = sender_email
+            account_keys = list(sender_accounts.keys())
+            account_labels = [
+                f'{sender_accounts[k]["label"]} <{sender_accounts[k]["email"]}>'
+                for k in account_keys
+            ]
+
+            if (
+                "selected_sender_account_key" not in st.session_state
+                or st.session_state.selected_sender_account_key not in account_keys
+            ):
+                st.session_state.selected_sender_account_key = account_keys[0]
+
+            default_index = account_keys.index(st.session_state.selected_sender_account_key)
+            picked_index = st.selectbox(
+                "Sender account",
+                range(len(account_keys)),
+                index=default_index,
+                format_func=lambda i: account_labels[i],
+                key="sender_account_selectbox",
+            )
+            selected_account_key = account_keys[picked_index]
+            st.session_state.selected_sender_account_key = selected_account_key
+
+            active_account = sender_accounts[selected_account_key]
+            sender_email = active_account["email"]
+            sender_password = active_account["password"]
+            smtp_server = active_account["smtp_server"] or global_smtp_server
+
+            try:
+                smtp_port = (
+                    int(active_account["smtp_port"])
+                    if active_account["smtp_port"]
+                    else global_smtp_port
+                )
+            except (TypeError, ValueError):
+                st.error(
+                    f"Invalid SMTP port for {active_account['label']}. "
+                    "Use a numeric port such as 587."
+                )
+                smtp_port = global_smtp_port
+                secrets_loaded = False
+
+            if not smtp_server:
+                st.error(
+                    "No SMTP server configured. Set SMTP_SERVER globally "
+                    "or per account in secrets.toml."
+                )
+                secrets_loaded = False
+
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        if secrets_loaded:
+            profile = ensure_sender_profile(
+                account_key=selected_account_key,
+                account_label=active_account["label"],
+                account_email=sender_email,
+            )
 
             st.markdown("""
             <style>
@@ -5073,6 +5249,9 @@ Would you be open to a quick introductory call sometime next week? I and my CEO 
             else:
                 selected_email_df = pd.DataFrame()
 
+            if not test_email:
+                st.warning("TEST_EMAIL not set in secrets.toml, so the test-send button is unavailable.")
+
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
             st.markdown("### Test Email Section")
             st.info("Use this section to send one test email to yourself before sending real outreach emails.")
@@ -5100,7 +5279,10 @@ Would you be open to a quick introductory call sometime next week? I and my CEO 
                 st.write("**Test Body Preview:**")
                 components.html(f"<div style='background:#020617;color:#e5e7eb;border:1px solid rgba(148,163,184,.25);border-radius:14px;padding:16px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.55;'>{test_html_body}</div>", height=520, scrolling=True)
 
-                if st.button("Send Test Email To Myself"):
+                if st.button(
+                    "Send Test Email To Myself",
+                    disabled=not bool(test_email),
+                ):
                     try:
                         send_email_smtp(
                             smtp_server,
