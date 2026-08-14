@@ -1,0 +1,87 @@
+{
+  "thet": {
+    "display_name": "thet",
+    "role": "Analyst",
+    "sender_account_key": "thet",
+    "sender_email": "dominancethk@gmail.com",
+    "sender_name": "Thet Kyaw",
+    "password_algorithm": "argon2id",
+    "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$6iRsMGiCVoHiERCwAcwU8w$cvZfbdkXl57L2zEBZDVZ+Pq/xZ33kz/LcaoDUDmjOJg",
+    "mfa_enabled": true,
+    "totp_secret_encrypted": "gAAAAABqetV2moYholOEHY8AyfkPRrxTDBJPBZquos2-LD4LUuvRH1JPiknQAxgdITbw01BVKRjtFCBYJXvJG1B1ENB8EpPYAJDW4FW138GIUHLR-MIRwPmcomFRcZkUOS_7k0g6qDk1",
+    "recovery_code_hashes": [
+      "35e74ccb6e084be8ed48202744d6ef2bc3c02ca0ba94a14ff5aa7b6ccef74bf0",
+      "19b365f6941453a25ec413b80fb3211ffa6af029c001d82fa469f4f02d0eced4",
+      "5c943353bff56577175349d3df2e307127ae56a8a68ba19f1d8f55b7126777df",
+      "17e49037a66c847132db7f1a55f26f2f43ebedd9a4d0031ddeb98cd33b0b07d5",
+      "c917f177471fd8877b27a18d1c30a04d3b8f0518acb2e13f84c692a373a4917d"
+    ],
+    "enabled": true
+  },
+  "admin": {
+    "display_name": "admin",
+    "role": "Admin",
+    "sender_account_key": "thet",
+    "sender_email": "dominancethk@gmail.com",
+    "sender_name": "Thet Kyaw",
+    "password_algorithm": "argon2id",
+    "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$xbjDIBmMKYO2XEiG3wq1hQ$4L83/00FNOsCJW0dDQ8jBOSazUgX8dFDnxzOZSR2T5k",
+    "mfa_enabled": true,
+    "totp_secret_encrypted": "gAAAAABqeyM1QGE5vrBNxbUIJ4bGxlGWYnblHbS7sFL1O8idQObgxbr3DmxL-vEdzmBYxkju5gdbX8ii_RwlPMUd6vzhz2FrlivA7f9FqAHbix7fcGqaWhnepqD1kYUbpIy1h2IEtQXw",
+    "recovery_code_hashes": [
+      "43369cc3bb5f74220c81152b9950a23fd3f03036e6a1504c7763e492dd6361cb",
+      "b16173236be588002d6239da981b8abbd51294d2eec3724e4df168bdb038d9e7",
+      "ad657c159a2ed5d87190a2c61476d87d2c8aa8b2af4ad4b370acea1afeb63f18",
+      "4df6e45dcf6fbe690d08bf68240fe71edc80d6e299558d9cb52de1ae94808024",
+      "c65f66ef3bd3add62ba096cf89223400314283c1ddd4e3edb43cab954c498b3b",
+      "cb577898d059f658444682ad91d711c54a58a129032e01f8de0d67d5b491e9fe",
+      "1b422230f3b474c08c30a1b53b7808febcb154022610c278a2dfc9dc9c23f1de",
+      "46a3c1b51176b370af5638055816f1a0215431eb20d75fc4fbdbfd5d777432c8"
+    ],
+    "enabled": true
+  },
+  "testuser": {
+    "display_name": "testuser",
+    "role": "Analyst",
+    "sender_account_key": "thet",
+    "sender_email": "dominancethk@gmail.com",
+    "sender_name": "Thet Kyaw",
+    "password_algorithm": "argon2id",
+    "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$igIVcAnWAKRfwNSuokmzhw$2rCRculU0PtRmmBYfqL4E/ip2CrsD+6GnrdHmAJdqSk",
+    "mfa_enabled": true,
+    "totp_secret_encrypted": "gAAAAABqeyp_jv_S-nXKSGgF3Lxfkwg0TWh0GXeiwScvWFLtusIUo-DU0an6Soereyx3btvyqVRWFdruUDCDbdsVxiiP-3WsNRdovrcjaeg1LTftf2u9WH_qmvC25AM7-cpAdcmkoihr",
+    "recovery_code_hashes": [
+      "f1c956acbfdd4801cd6a427eb387c7f8c425cb7a156dbc9a71ea3e1378a5b9fa",
+      "6a23650119b787d5e8ed0ad417fe83f4484dfdf9835ea1a10d741f133a10126c",
+      "e171ea930bb232fd91eb32ffdb1acc2c02b9af548640ff34367ef8994e609bf1",
+      "1a01358168b9b826a1d1e26896d0dfb41c8b734eed768fef140a0329f58ad919",
+      "00e1e3875320d5e2e82d830cac175c5f0bbd39fd794fc6537d8acb8b89039c51",
+      "98348afc7018cbb9921c4c455829cf2fe58aeeecd2995238ef4446f12a5192f7",
+      "5cd27f58b1a8c4a22be35d3d67e04e53259d164ffda929c8f6952ee21b8b567f",
+      "6619303d40da1e0461320cbca444bb46953d5b47e118512e3ac4127e977fbe46"
+    ],
+    "enabled": true
+  },
+  "bob": {
+    "display_name": "bob",
+    "role": "Analyst",
+    "sender_account_key": "thet",
+    "sender_email": "dominancethk@gmail.com",
+    "sender_name": "Thet Kyaw",
+    "password_algorithm": "argon2id",
+    "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$PUp5zbsJp4IuMkZL1+ABcg$/d7sxqUqJ1kwwyra+2DNxZGKhDGYngkRVC2Bt5Wz2Pc",
+    "mfa_enabled": true,
+    "totp_secret_encrypted": "gAAAAABqeyxoSviId88WKofJ2zWsyApIGvWf15cAXhDD_gj76SgkPeD94O2D44pyHo4nH0kBsZHbjGsKqfShvQIatVcFCiIcPq9c1tUCpGOmimgXCGZzecU-QEx8ZNgCQU57I-GUU8La",
+    "recovery_code_hashes": [
+      "011496630221095f03270288def183e7716080ae9a859f455ae156eb384b1da7",
+      "834c45da738d76f0a0dbad706f66625dca49bdf35d867d5d33592490ac3576bf",
+      "9cad4a97b0083987edbfe6e0dee4bf1973896a2c8a5d656d8e81fe79c76fba14",
+      "2491ca4788d01704cfa19c3dc84ee11c1912f59f1903194c33acf2b74324b61c",
+      "92111a72e720eb793926f0bdda9347c8095d713ef6c1ba13a667a9cc0e04c67a",
+      "a6a4a08d3cadc0c976c76329eec6ffa9ef020451d35d730635ac65e49f834b26",
+      "403c30bd6c624bddb7e31b8d914a5e0e3e55d79a6d33e8ef09b17130004ac41e",
+      "3003497cb4d962761d7b8b2e7fa0f46bb1e3fab86a73a13467965496370beb4e"
+    ],
+    "enabled": true
+  }
+}
